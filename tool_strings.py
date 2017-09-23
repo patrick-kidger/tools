@@ -1,0 +1,1 @@
+QLIST_NON_NEGATIVE_ERROR = 'qlist indices must be non-negative'
