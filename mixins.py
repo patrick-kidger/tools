@@ -1,5 +1,7 @@
 import copy
 
+import Tools.helpers as helpers
+
 
 class NoneAttributesMixin(object):
     """Accessing attributes which do not exist will return None instead of raising an AttributeError."""
@@ -21,6 +23,7 @@ class DynamicSubclassingMixin(object):
     def __init__(self):
         for attr in self._subclass_properties:
             setattr(self, attr, self._subclass_properties[attr])
+        super(DynamicSubclassingMixin, self).__init__()
 
     def set_subclass(self, subclass):
         """Sets the class of the instance to the specified subclass."""
@@ -94,24 +97,19 @@ def subclass_tracker(attr_name):
 
     A subclass can avoid itself being registered by setting the attribute specified by :attr_name: to None.
 
-    It can be a little convoluted for a class to be in multiple registries. The naive implementation:
+    It takes a little extra work for a class to be in multiple registries. The naive implementation:
     >>> R1 = subclass_tracker('somefield')
     >>> R2 = subclass_tracker('somefield')
     >>> class A(R1): somefield='id_str_for_A'
     ...
     >>> class B(A, R2): somefield='id_str_for_B'
     ...
-    will not work, as B is now attempting to have two different and unrelated metaclasses.
-    Instead, it is necessary to define a new metaclass inheriting from both of the old ones:
-    >>> class R1R2Meta(R1.__class__, R2.__class__):
-    ...     def __init__(cls, name, bases, dct):
-    ...         R1.__class__.__init__(cls, name, bases, dct)  # Register with R1
-    ...         R2.__class__.__init__(cls, name, bases, dct)  # Register with R2
-    ...
-    >>> class B(A, R2, metaclass=R1R2Meta): somefield='id_str_for_B'
-    Which now works as B's metaclass is now a subclass of the metaclasses of its parents.
+    will not work, as B is now attempting to have two different and unrelated metaclasses. Instead:
+    >>> class B(A, R2, metaclass=A.__class__ + R2.__class__): somefield='id_str_for_B'
+    Which creates a new metaclass inheriting from both of the old ones, so that B's metaclass is a subclass of the
+    metaclasses of A and R2, as required.
     """
-    class SubclassTrackerMixinMetaclass(type):
+    class SubclassTrackerMixinMetaclass(type, metaclass=helpers.ClassAdder):
         def __init__(cls, name, bases, dct):
             attr_value = getattr(cls, attr_name, None)
             if attr_value is not None:

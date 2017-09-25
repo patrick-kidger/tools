@@ -11,14 +11,19 @@ class Object(dict):
     
     The name is a reference to Objects in JavaScript, which behave in this way."""
     
-    def __init__(self, *args, default_value=None, kwargs_={}, **kwargs):
+    def __init__(self, *args, default_value=None, from_dict=None, **kwargs):
+        if from_dict is None:
+            from_dict = {}
+
         for default in args:
             self[default] = self._wrapper(default_value)
-        for key, val in itertools.chain(kwargs.items(), kwargs_.items()):
+        for key, val in itertools.chain(kwargs.items(), from_dict.items()):
             self[key] = self._wrapper(val)
+
+        super(Object, self).__init__()
         
-    def _wrapper(self, input):
-        return input
+    def _wrapper(self, input_):
+        return input_
     
     def __getattr__(self, item):
         if self.is_magic(item):
