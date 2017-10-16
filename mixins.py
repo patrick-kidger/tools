@@ -13,23 +13,23 @@ class DynamicSubclassingMixin(object):
     """Allows for dynamically setting the subclass of the instance. This function returns a class that should be
     inherited from.
 
-    The class should have a dictionary called '_subclass_properties', specifying (as keys) what properties it is
+    The class should have a dictionary called '_instance_properties', specifying (as keys) what properties it is
     expecting to have, along with their initial state (as values).
 
     This mixin will only usually actually be necessary when wishing to adjust non-method properties, as methods are
     (usually) actually class-level properties, and thus a simple self.__class__ = Foo statement would then suffice."""
-    _subclass_properties = dict()
+    _instance_properties = dict()
 
     def __init__(self):
-        for attr in self._subclass_properties:
-            setattr(self, attr, self._subclass_properties[attr])
+        for attr in self._instance_properties:
+            setattr(self, attr, self._instance_properties[attr])
         super(DynamicSubclassingMixin, self).__init__()
 
     def set_subclass(self, subclass):
         """Sets the class of the instance to the specified subclass."""
-        existing_class_attr_names = set(self._subclass_properties.keys())
-        new_subclass_properties = subclass._subclass_properties
-        new_subclass_attr_names = set(new_subclass_properties.keys())
+        existing_class_attr_names = set(self._instance_properties.keys())
+        new_instance_properties = subclass._instance_properties
+        new_subclass_attr_names = set(new_instance_properties.keys())
 
         attrs_to_remove = existing_class_attr_names.difference(new_subclass_attr_names)
         attrs_to_add = new_subclass_attr_names.difference(existing_class_attr_names)
@@ -37,7 +37,7 @@ class DynamicSubclassingMixin(object):
         for attr in attrs_to_remove:
             delattr(self, attr)
         for attr in attrs_to_add:
-            setattr(self, attr, copy.deepcopy(new_subclass_properties[attr]))
+            setattr(self, attr, copy.deepcopy(new_instance_properties[attr]))
 
         self.__class__ = subclass
 
