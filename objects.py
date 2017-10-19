@@ -1,6 +1,7 @@
 """Objects for storing data."""
 
 import itertools
+import uuid
 
 import Tools.tool_strings as tool_strings
 import Tools.wrappers as wrappers
@@ -21,30 +22,30 @@ class Object(dict):
             self[key] = self._wrapper(val)
 
         super(Object, self).__init__()
-        
-    def _wrapper(self, input_):
-        return input_
     
     def __getattr__(self, item):
-        if self.is_magic(item):
+        if self._is_magic(item):
             return super(Object, self).__getattr__(item)
         else:
             return self.__getitem__(item)
         
     def __setattr__(self, item, value):
-        if self.is_magic(item):
+        if self._is_magic(item):
             return super(Object, self).__setattr__(item)
         else:
             return self.__setitem__(item, value)
     
     def __delattr__(self, item):
-        if self.is_magic(item):
+        if self._is_magic(item):
             return super(Object, self).__delattr__(item)
         else:
             return self.__delitem__(item)
+
+    def _wrapper(self, input_):
+        return input_
         
     @staticmethod
-    def is_magic(item):
+    def _is_magic(item):
         return item.startswith('__') and item.startswith('__')
         
         
@@ -54,29 +55,63 @@ class PropObject(Object):
     
     Thus its intended that is variables will probably be lambda functions. The name is because its
     values are emulating @property."""
-    
-    def _wrapper(self, input):
-        return wrappers.StrCallable(input)
-    
+
     def __getitem__(self, item):
         return super(Object, self).__getitem__(item)()
-        
+
+    def _wrapper(self, input):
+        return wrappers.StrCallable(input)
+
         
 class ContainerMetaclass(type):
     def __contains__(cls, item):
+        if cls is Container:
+            return False
         if item in cls.__dict__.values():
             return True
         for parent_class in cls.__bases__:
-            if parent_class is Container:
-                return False
             if item in parent_class:
                 return True
         return False
 
+    def __add__(self, other):
+        try:  # Test if 'other' is iterable. (i.e. is a tuple or list)
+            iter(other)
+        except TypeError:  # Assume other is a Container
+            other_class = other
+        else:  # Convert 'other' into a class we can inherit from
+            class other_class(Container):
+                pass
+            for item in other:
+                setattr(other_class, uuid.uuid4().hex, item)
+
+        class ContainerCombined(self, other_class):
+            pass
+        return ContainerCombined
+
 
 class Container(object, metaclass=ContainerMetaclass):
-    """Allows use of the 'in' keyword to test if the specified value is one of
-    the values that one of its class variables is set to."""
+    """Allows use of the 'in' keyword to test if the specified value is one of the values that one of its class
+    variables is set to. Can be added together; can also have tuples and lists added to them."""
+
+
+class ContainsAll(object):
+    """Instances of this class always returns true when testing if something is contained in it."""
+    def __contains__(self, item):
+        return True
+
+
+class WithNothing(object):
+    """Does nothing when used in a with statement. Example usage:
+
+    >>> with DoesSomething() if condition else WithNothing():
+    ...     some_stuff()
+    """
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
 
     
 class list_tuplable_index(list):
