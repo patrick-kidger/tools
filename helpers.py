@@ -9,7 +9,7 @@ class ClassAdder(type):
 
 
 class WithAnder(object):
-    """Mixin to allow for anding classes used in with statements together.
+    """Mixin to allow for adding classes used in with statements together.
 
     Example usage:
 
@@ -25,11 +25,11 @@ class WithAnder(object):
     ...     def __exit__(self, exc_type, exc_val, exc_tb):
     ...         pass
     ...
-    >>> with A() and B():
+    >>> with A() + B():
     ...     pass
     """
-    def __and__(self, other):
-        class WithCombined(WithAnder):  # Nesting fun!
+    def __add__(self, other):
+        class WithCombined(WithAnder):
             def __enter__(self_combined):
                 self.__enter__()
                 other.__enter__()
