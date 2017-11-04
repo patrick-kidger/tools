@@ -2,7 +2,7 @@ import functools
 
 
 def register(name_str, registration_dict):
-    """A decorator allowing for the decorated object to be registered in a dictionary."""
+    """A decorator which registers the decorated object in the specified dictionary."""
     def wrapper(input_val):
         registration_dict[name_str] = input_val
         return input_val
@@ -10,7 +10,7 @@ def register(name_str, registration_dict):
 
 
 def record(registration_list):
-    """A decorator allowing for the decorated object to be recorded in a list."""
+    """A decorator which records the decorated object in the specified list."""
     def wrapper(input_val):
         registration_list.append(input_val)
         return input_val
@@ -18,6 +18,7 @@ def record(registration_list):
 
 
 class combomethod(object):
+    """Marks the decorated method as being usable as both an instance method and a class method."""
     def __init__(self, method):
         self.method = method
 

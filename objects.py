@@ -1,104 +1,106 @@
 """Objects for storing data."""
 
 import itertools
-import uuid
+import collections
 
-import Tools.tool_strings as tool_strings
-import Tools.wrappers as wrappers
+from . import _strings as _strings
+from . import helpers as helpers
+from . import wrappers as wrappers
 
 
-class Object(dict):
-    """Subclasses dictionary to allow for using . notation to access its stored variables.
-    
-    The name is a reference to Objects in JavaScript, which behave in this way."""
-    
-    def __init__(self, *args, default_value=None, from_dict=None, **kwargs):
-        if from_dict is None:
-            from_dict = {}
-
-        for default in args:
-            self[default] = self._wrapper(default_value)
-        for key, val in itertools.chain(kwargs.items(), from_dict.items()):
+class _ObjectMixin(object):
+    def __init__(self, **kwargs):
+        for key, val in kwargs.items():
             self[key] = self._wrapper(val)
+        super(_ObjectMixin, self).__init__()
 
-        super(Object, self).__init__()
+    @classmethod
+    def from_dict(cls, dict_):
+        return cls(**dict_)
+
+    @classmethod
+    def from_args(cls, *args, default_value=None):
+        dict_ = {var: default_value for var in args}
+        return cls.from_dict(dict_)
     
     def __getattr__(self, item):
-        if self._is_magic(item):
-            return super(Object, self).__getattr__(item)
+        if helpers.is_magic(item):
+            return super(_ObjectMixin, self).__getattr__(item)
         else:
             return self.__getitem__(item)
         
     def __setattr__(self, item, value):
-        if self._is_magic(item):
-            return super(Object, self).__setattr__(item)
+        if helpers.is_magic(item):
+            return super(_ObjectMixin, self).__setattr__(item, value)
         else:
             return self.__setitem__(item, value)
     
     def __delattr__(self, item):
-        if self._is_magic(item):
-            return super(Object, self).__delattr__(item)
+        if helpers.is_magic(item):
+            return super(_ObjectMixin, self).__delattr__(item)
         else:
             return self.__delitem__(item)
 
     def _wrapper(self, input_):
         return input_
-        
-    @staticmethod
-    def _is_magic(item):
-        return item.startswith('__') and item.startswith('__')
-        
-        
+
+
+class _SortedMixin(object):
+    def __setitem__(self, key, value, *args, **kwargs):
+        shifted_keys = []
+        shifted_values = []
+        items = iter(list(self.items()))
+        for key_, value_ in items:
+            if sorted([key, key_]) == [key, key_]:
+                shifted_keys.append(key_)
+                shifted_values.append(value_)
+                break
+        for key_, value_ in items:
+            shifted_keys.append(key_)
+            shifted_values.append(value_)
+        for key_ in shifted_keys:
+            del self[key_]
+
+        super(_SortedMixin, self).__setitem__(key, value, *args, **kwargs)
+        for key_, value_ in zip(shifted_keys, shifted_values):
+            super(_SortedMixin, self).__setitem__(key_, value_, *args, **kwargs)
+
+
+class Object(_ObjectMixin, dict):
+    """Subclasses dictionary to allow for using . notation to access its stored variables.
+
+    The usual [] notation can still be used, for example when the name of the attribute is not known until runtime.
+    The name is a reference to Objects in JavaScript, which behave in this way."""
+
+
+class SortedObject(_SortedMixin, Object):
+    """An Object which keeps all of its attributes sorted. The usual [] notation can still be used as it can for regular
+    Objects, but note that passing non-strings this way will not work in general, as these non-strings cannot be
+    compared to the strings which the attributes are stored with, and thus no notion of sorting would make sense."""
+
+
+class OrderedObject(_ObjectMixin, collections.OrderedDict):
+    """An Object which remembers the order its attributes were added in."""
+
+
+class SortedDict(_SortedMixin, collections.OrderedDict):
+    """A dictionary which keeps its key: value pairs sorted by key. Note that this means that all of its keys must be
+    comparable to each other; for instance you cannot have both 1 and '1' as keys, as integers and strings are not
+    comparable."""
+
+
 class PropObject(Object):
     """Subclasses Object so that accessing any of its values results in that value being called before
     being returned.
-    
+
     Thus its intended that is variables will probably be lambda functions. The name is because its
     values are emulating @property."""
 
     def __getitem__(self, item):
         return super(Object, self).__getitem__(item)()
 
-    def _wrapper(self, input):
-        return wrappers.StrCallable(input)
-
-        
-class ContainerMetaclass(type):
-    def __contains__(cls, item):
-        if cls is Container:
-            return False
-        if item in cls.__dict__.values():
-            return True
-        for parent_class in cls.__bases__:
-            if item in parent_class:
-                return True
-        return False
-
-    def __add__(self, other):
-        try:  # Test if 'other' is iterable. (i.e. is a tuple or list)
-            iter(other)
-        except TypeError:  # Assume other is a Container
-            other_class = other
-        else:  # Convert 'other' into a class we can inherit from
-            class other_class(Container):
-                pass
-            for item in other:
-                setattr(other_class, uuid.uuid4().hex, item)
-
-        class ContainerCombined(self, other_class):
-            pass
-        return ContainerCombined
-
-
-class Container(object, metaclass=ContainerMetaclass):
-    """Allows use of the 'in' keyword to test if the specified value is one of the values that one of its class
-    variables is set to. Can be added together; can also have tuples and lists added to them."""
-
-
-class ContainsAll(object):
-    """Instances of this class always returns true when testing if something is contained in it."""
-    def __contains__(self, item):
-        return True
+    def _wrapper(self, input_):
+        return wrappers.StrCallable(input_)
 
 
 class WithNothing(object):
@@ -162,7 +164,7 @@ class qlist(list_tuplable_index):
         try:
             try:
                 if first_item < 0:
-                    raise IndexError(tool_strings.QLIST_NON_NEGATIVE_ERROR)
+                    raise IndexError(_strings.QLIST_NON_NEGATIVE_ERROR)
             except TypeError:  # If first_item is actually a slice or something
                 pass
             val = super(qlist, self).__getitem__(item)

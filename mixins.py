@@ -1,6 +1,7 @@
 import copy
 
-import Tools.helpers as helpers
+from . import metaclasses as metaclasses
+from . import helpers as helpers
 
 
 class NoneAttributesMixin(object):
@@ -84,7 +85,7 @@ def subclass_tracker(attr_name):
     ...
     >>> A.find_subclass('id_str_for_D')
 
-    **Details**
+    *** Details ***
     There is a single registry that can be accessed by all subclasses in the structure, and so
     >>> C.find_subclass('id_str_for_A')
     >>> C.find_subclass('id_str_for_B')
@@ -109,16 +110,19 @@ def subclass_tracker(attr_name):
     Which creates a new metaclass inheriting from both of the old ones, so that B's metaclass is a subclass of the
     metaclasses of A and R2, as required.
     """
-    class SubclassTrackerMixinMetaclass(type, metaclass=helpers.ClassAdder):
+    class SubclassTrackerMixinMetaclass(type, metaclass=metaclasses.ClassAdder):
         def __init__(cls, name, bases, dct):
             attr_value = getattr(cls, attr_name, None)
+            # The condition means that, in particular, we won't register SubclassTrackerMixin itself. This is necessary
+            # as we reference it explicitly in a few lines - but it won't have been defined yet the first time this
+            # function is called, when defining SubclassTrackerMixin itself.
+            # We reference SubclassTrackerMixin explicitly here, rather than using cls, so that multiple trackers work.
+            # (See the example at the end of the docstring.)
             if attr_value is not None:
-                # The condition means that, in particular, we won't register SubclassTrackerMixin itself. This is
-                # necessary as we reference it explicitly on the next line, when it won't have been defined yet the
-                # first time this function is called. (i.e. when defining SubclassTrackerMixin!)
-                # We reference SubclassTrackerMixin explicitly here, rather than using cls, so that multiple trackers
-                # work. (See the example at the end of the docstring.)
-                SubclassTrackerMixin._subclass_registry[attr_value] = cls
+                # We might not set attr_name on some subclasses, perhaps because that subclass is itself an abstract
+                # base class for its subclasses; doing so shouldn't overwrite what we already have.
+                if attr_value not in SubclassTrackerMixin._subclass_registry:
+                    SubclassTrackerMixin._subclass_registry[attr_value] = cls
             super(SubclassTrackerMixinMetaclass, cls).__init__(name, bases, dct)
 
     class SubclassTrackerMixin(object, metaclass=SubclassTrackerMixinMetaclass):
@@ -143,3 +147,47 @@ def dynamic_subclassing_by_attr(attr_name):
             self.set_subclass(cls)
 
     return DynamicSubclassingByAttrMixin
+
+
+class ContainerMetaclass(type):
+    def __contains__(cls, item):
+        if cls is Container:
+            return False
+        if item in cls.__dict__.values():
+            return True
+        for parent_class in cls.__bases__:
+            if item in parent_class:
+                return True
+        return False
+
+    def __iter__(cls):
+        for key, val in cls.__dict__.items():
+            if not helpers.is_magic(key):
+                yield key, val
+
+    def __add__(cls, other):
+        try:  # Test if 'other' is iterable. (i.e. is a tuple or list)
+            iter(other)
+        except TypeError:  # Assume other is a Container
+            other_class = other
+        else:  # Convert 'other' into a class we can inherit from
+            class other_class(Container):
+                pass
+            for item in other:
+                setattr(other_class, helpers.uuid(), item)
+
+        class ContainerCombined(cls, other_class):
+            pass
+        return ContainerCombined
+
+
+class Container(object, metaclass=ContainerMetaclass):
+    """Allows use of the 'in' keyword to test if the specified value is one of the values that one of its class
+    variables is set to. Also allows for use of 'in' to iterate over its elements. Containers can be added together,
+    and can also have tuples and lists added to them."""
+
+
+class ContainsAll(object):
+    """Instances of this class always returns true when testing if something is contained in it."""
+    def __contains__(self, item):
+        return True

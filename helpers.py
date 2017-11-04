@@ -1,43 +1,4 @@
-class ClassAdder(type):
-    """Set as a metaclass to allow classes to be 'added' together to produce a subclass inheriting from both.
-
-    Easily allows the use of multiple metaclasses, by 'adding' them together to create a new metaclass."""
-    def __add__(self, other):
-        class ClassesAdded(self, other):
-            pass
-        return ClassesAdded
-
-
-class WithAnder(object):
-    """Mixin to allow for adding classes used in with statements together.
-
-    Example usage:
-
-    >>> class A(WithAnder):
-    ...     def __enter__(self):
-    ...         pass
-    ...     def __exit__(self, exc_type, exc_val, exc_tb):
-    ...         pass
-    ...
-    >>> class B(WithAnder):
-    ...     def __enter__(self):
-    ...         pass
-    ...     def __exit__(self, exc_type, exc_val, exc_tb):
-    ...         pass
-    ...
-    >>> with A() + B():
-    ...     pass
-    """
-    def __add__(self, other):
-        class WithCombined(WithAnder):
-            def __enter__(self_combined):
-                self.__enter__()
-                other.__enter__()
-
-            def __exit__(self_combined, exc_type, exc_val, exc_tb):
-                self.__exit__(exc_type, exc_val, exc_tb)
-                other.__exit__(exc_type, exc_val, exc_tb)
-        return WithCombined()
+import uuid as uuid_
 
 
 def deep_locate_variable(top_object, variable_name):
@@ -60,3 +21,13 @@ def deepsetattr(top_object, variable_name, value):
     """Use as setattr, but can find subattributes separated by a '.', e.g. deepsetattr(a, 'b.c')"""
     penultimate_variable, last_variable_name = deep_locate_variable(top_object, variable_name)
     setattr(penultimate_variable, last_variable_name, value)
+
+
+def uuid():
+    """Returns a unique identifier in hex."""
+    return uuid_.uuid4().hex
+
+
+def is_magic(item):
+    """Whether or not the specified string is __magic__"""
+    return item.startswith('__') and item.startswith('__')
