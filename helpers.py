@@ -31,3 +31,22 @@ def uuid():
 def is_magic(item):
     """Whether or not the specified string is __magic__"""
     return item.startswith('__') and item.startswith('__')
+
+
+__sentinel = object()
+def extract_keys(dict, keys, no_key_val=__sentinel):
+    """Removes the specified keys from the given dictionary, and returns a dictionary containing those key:value
+    pairs. Default behaviour is to ignore those keys which can't be found in the original dictionary. The optional
+    argument :no_key_val: can be set to what value missing keys should take in the returned dictionary."""
+
+    return_dict = {}
+    for key in keys:
+        val = dict.pop(key, no_key_val)
+        if val is not __sentinel:
+            return_dict[key] = val
+    return return_dict
+
+
+def clamp(val, min_, max_):
+    """Clamps :val: to the range between :min_: and :max_:"""
+    return min(max(val, min_), max_)

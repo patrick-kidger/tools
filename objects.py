@@ -3,7 +3,6 @@
 import itertools
 import collections
 
-from . import _strings as _strings
 from . import helpers as helpers
 from . import wrappers as wrappers
 
@@ -164,13 +163,21 @@ class qlist(list_tuplable_index):
         try:
             try:
                 if first_item < 0:
-                    raise IndexError(_strings.QLIST_NON_NEGATIVE_ERROR)
+                    raise IndexError
             except TypeError:  # If first_item is actually a slice or something
                 pass
             val = super(qlist, self).__getitem__(item)
         except IndexError:
             val = self.except_val
         return val
+
+
+class nonneg_deque(collections.deque):
+    """As collections.deque, but only supports positive indexing."""
+    def __getitem__(self, item):
+        if item < 0:
+            raise IndexError('nonneg_deque index out of range')
+        return super(nonneg_deque, self).__getitem__(item)
         
         
 def array(*args, fill_func=lambda pos: 0, list_type=list_tuplable_index, _pos=None):
