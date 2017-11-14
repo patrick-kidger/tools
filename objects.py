@@ -24,21 +24,29 @@ class _ObjectMixin(object):
     
     def __getattr__(self, item):
         if helpers.is_magic(item):
-            return super(_ObjectMixin, self).__getattr__(item)
+            super(_ObjectMixin, self).__getattr__(item)
         else:
-            return self.__getitem__(item)
+            try:
+                returnval = self.__getitem__(item)
+            except KeyError as e:
+                raise AttributeError(e) from e
+            else:
+                return returnval
         
     def __setattr__(self, item, value):
         if helpers.is_magic(item):
-            return super(_ObjectMixin, self).__setattr__(item, value)
+            super(_ObjectMixin, self).__setattr__(item, value)
         else:
-            return self.__setitem__(item, value)
+            self.__setitem__(item, value)
     
     def __delattr__(self, item):
         if helpers.is_magic(item):
-            return super(_ObjectMixin, self).__delattr__(item)
+            super(_ObjectMixin, self).__delattr__(item)
         else:
-            return self.__delitem__(item)
+            try:
+                self.__delitem__(item)
+            except KeyError as e:
+                raise AttributeError(e) from e
 
     def _wrapper(self, input_):
         return input_
