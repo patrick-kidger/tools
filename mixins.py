@@ -1,6 +1,5 @@
 import copy
 
-from . import metaclasses as metaclasses
 from . import helpers as helpers
 
 
@@ -68,11 +67,10 @@ class FindableSubclassMixin(object):
 
 
 def subclass_tracker(attr_name):
-    """Can be used to keep track of all created subclasses of a particular class. This function returns a class that
-    should be inherited from.
-
-    A dictionary is created to keep track of the subclasses: the values in the dictionary are the subclasses. The keys
-    are the value of the attribute specified by :attr_name: on each subclass.
+    """Creates a class which will record all of its subclasses (and subsub, etc.) in a dictionary, and provides a
+    function to look them up in this dictionary. The argument :attr_name: is the name of the attribute that its
+    subclasses should specify; the value of this attribute is the key in this dictionary, with its value being the
+    subclass it is associated with.
 
     *** Example usage **
     >>> class A(subclass_tracker('id_field')): id_field = 'id_str_for_A'
@@ -91,42 +89,23 @@ def subclass_tracker(attr_name):
     >>> C.find_subclass('id_str_for_B')
     will both work, and return A and B respectively.
 
-    Care must be taken to define the requisite field on all subclasses. e.g. suppose we also defined:
-    >>> class E(C): pass
-    Then C would find itself overwritten in the registry (as performing the attribute lookup on E for :attr_name: will
-    return C's :attr_name: attribute), and so A.find_subclass('id_str_for_C') would return E.
-
-    A subclass can avoid itself being registered by setting the attribute specified by :attr_name: to None.
-
-    It takes a little extra work for a class to be in multiple registries. The naive implementation:
-    >>> R1 = subclass_tracker('somefield')
-    >>> R2 = subclass_tracker('somefield')
-    >>> class A(R1): somefield='id_str_for_A'
-    ...
-    >>> class B(A, R2): somefield='id_str_for_B'
-    ...
-    will not work, as B is now attempting to have two different and unrelated metaclasses. Instead:
-    >>> class B(A, R2, metaclass=A.__class__ + R2.__class__): somefield='id_str_for_B'
-    Which creates a new metaclass inheriting from both of the old ones, so that B's metaclass is a subclass of the
-    metaclasses of A and R2, as required.
+    A subclass does not have to define an attribute with name :attr_name:. In this case it will just not be added to the
+    registry, and will not be findable through this system.
     """
-    class SubclassTrackerMixinMetaclass(type, metaclass=metaclasses.ClassAdder):
-        def __init__(cls, name, bases, dct):
-            attr_value = getattr(cls, attr_name, None)
-            # The condition means that, in particular, we won't register SubclassTrackerMixin itself. This is necessary
-            # as we reference it explicitly in a few lines - but it won't have been defined yet the first time this
-            # function is called, when defining SubclassTrackerMixin itself.
-            # We reference SubclassTrackerMixin explicitly here, rather than using cls, so that multiple trackers work.
-            # (See the example at the end of the docstring.)
-            if attr_value is not None:
-                # We might not set attr_name on some subclasses, perhaps because that subclass is itself an abstract
-                # base class for its subclasses; doing so shouldn't overwrite what we already have.
-                if attr_value not in SubclassTrackerMixin._subclass_registry:
-                    SubclassTrackerMixin._subclass_registry[attr_value] = cls
-            super(SubclassTrackerMixinMetaclass, cls).__init__(name, bases, dct)
 
-    class SubclassTrackerMixin(object, metaclass=SubclassTrackerMixinMetaclass):
+    class SubclassTrackerMixin(object):
         _subclass_registry = dict()
+
+        def __init_subclass__(cls, **kwargs):
+            super(SubclassTrackerMixin, cls).__init_subclass__(**kwargs)
+
+            attr_value = getattr(cls, attr_name, None)
+            # We might not set attr_name on some subclasses, perhaps because that subclass is itself an abstract base
+            # class for its subclasses; doing so shouldn't overwrite what we already have.
+            if attr_value not in SubclassTrackerMixin._subclass_registry:
+                # We reference SubclassTrackerMixin explicitly here, rather than using cls, so that a class inheriting
+                # from multiple trackers works.
+                SubclassTrackerMixin._subclass_registry[attr_value] = cls
 
         @classmethod
         def find_subclass(cls, attr_value):
@@ -138,9 +117,8 @@ def subclass_tracker(attr_name):
 
 def dynamic_subclassing_by_attr(attr_name):
     """Combines dynamic subclassing with locating subclasses by attribute name."""
-    SubclassTrackerMixin = subclass_tracker(attr_name)
 
-    class DynamicSubclassingByAttrMixin(DynamicSubclassingMixin, SubclassTrackerMixin):
+    class DynamicSubclassingByAttrMixin(DynamicSubclassingMixin, subclass_tracker(attr_name)):
         def pick_subclass(self, field_value):
             """Sets the class of the instance to the class associated with the inputted value."""
             cls = self.find_subclass(field_value)
