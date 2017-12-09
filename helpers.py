@@ -1,26 +1,47 @@
+import itertools
 import uuid as uuid_
+
+
+def _getattritem(o, name):
+    if ']' == name[-1]:
+        return o[int(name[:-1])]
+    else:
+        return getattr(o, name)
+
+
+def _setattritem(o, name, val):
+    if ']' == name[-1]:
+        o[int(name[:-1])] = val
+    else:
+        setattr(o, name, val)
 
 
 def deep_locate_variable(top_object, variable_name):
     """Used to extend getattr etc. to finding subattributes."""
-    variable_descent = variable_name.split('.')
-    prev_variable = top_object
-    while len(variable_descent) > 1:
-        next_variable_name = variable_descent.pop(0)
-        prev_variable = deepgetattr(prev_variable, next_variable_name)
-    return prev_variable, variable_descent[0]
+    _variable_descent = variable_name.split('.')
+    variable_descent = []
+    for var in _variable_descent:
+        variable_descent.extend(var.split('['))
+
+    next_variable = top_object
+    for next_variable_name in variable_descent[:-1]:
+        next_variable = _getattritem(next_variable, next_variable_name)
+
+    return next_variable, variable_descent[-1]
 
 
 def deepgetattr(top_object, variable_name):
-    """Use as getattr, but can find subattributes separated by a '.', e.g. deepgetattr(a, 'b.c')"""
+    """Use as getattr, but can find subattributes separated by a '.', e.g. deepgetattr(a, 'b.c'). Also supports access
+    via __getitem__ notation for integers, e.g. deepgetattr(a, 'b.c[5].e')"""
     penultimate_variable, last_variable_name = deep_locate_variable(top_object, variable_name)
-    return getattr(penultimate_variable, last_variable_name)
+    return _getattritem(penultimate_variable, last_variable_name)
 
 
 def deepsetattr(top_object, variable_name, value):
-    """Use as setattr, but can find subattributes separated by a '.', e.g. deepsetattr(a, 'b.c')"""
+    """Use as setattr, but can find subattributes separated by a '.', e.g. deepsetattr(a, 'b.c'). Also supports access
+    via __getitem__ notation for integers, e.g. deepsetattr(a, 'b.c[5].e', some_val)"""
     penultimate_variable, last_variable_name = deep_locate_variable(top_object, variable_name)
-    setattr(penultimate_variable, last_variable_name, value)
+    _setattritem(penultimate_variable, last_variable_name, value)
 
 
 def uuid():
