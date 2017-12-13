@@ -1,4 +1,5 @@
 import itertools
+import re
 import uuid as uuid_
 
 
@@ -71,3 +72,20 @@ def extract_keys(dict, keys, no_key_val=__sentinel):
 def clamp(val, min_, max_):
     """Clamps :val: to the range between :min_: and :max_:"""
     return min(max(val, min_), max_)
+
+
+def re_sub_recursive(pattern, sub, inputstr):
+    """Recursive regex.
+
+    :str pattern: The regex pattern
+    :str sub: What to substitute the regex pattern for.
+    :str inputstr: The string to perform the substitutions on."""
+    patt = re.compile(pattern)
+
+    old_inputstr = inputstr
+    inputstr = patt.sub(sub, inputstr)
+    while old_inputstr != inputstr:
+        old_inputstr = inputstr
+        inputstr = patt.sub(sub, inputstr)
+
+    return inputstr
