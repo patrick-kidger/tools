@@ -3,13 +3,13 @@ import copy
 from . import helpers as helpers
 
 
-class NoneAttributesMixin(object):
+class NoneAttributesMixin:
     """Accessing attributes which do not exist will return None instead of raising an AttributeError."""
     def __getattr__(self, item):
         return None
 
 
-class DynamicSubclassingMixin(object):
+class DynamicSubclassingMixin:
     """Allows for dynamically setting the subclass of the instance. This function returns a class that should be
     inherited from.
 
@@ -42,7 +42,7 @@ class DynamicSubclassingMixin(object):
         self.__class__ = subclass
 
 
-class FindableSubclassMixin(object):
+class FindableSubclassMixin:
     """Allows for locating a subclass based on a particular class variable being set to a particular value. It does a
     full search of the subclass structure each time its methods are called, which is not particular efficient. You may
     prefer the subclass_tracker function below."""
@@ -93,7 +93,7 @@ def subclass_tracker(attr_name):
     registry, and will not be findable through this system.
     """
 
-    class SubclassTrackerMixin(object):
+    class SubclassTrackerMixin:
         _subclass_registry = dict()
 
         def __init_subclass__(cls, **kwargs):
@@ -159,13 +159,13 @@ class ContainerMetaclass(type):
         return ContainerCombined
 
 
-class Container(object, metaclass=ContainerMetaclass):
+class Container(metaclass=ContainerMetaclass):
     """Allows use of the 'in' keyword to test if the specified value is one of the values that one of its class
     variables is set to. Also allows for use of 'in' to iterate over its elements. Containers can be added together,
     and can also have tuples and lists added to them."""
 
 
-class ContainsAll(object):
+class ContainsAll:
     """Instances of this class always returns true when testing if something is contained in it."""
     def __contains__(self, item):
         return True

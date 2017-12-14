@@ -2,7 +2,7 @@ from . import helpers as helpers
 from . import mixins as mixins
 
 
-class WithAdder(object):
+class WithAdder:
     """Mixin to allow for adding classes used in with statements together.
 
     Example usage:

@@ -1,4 +1,4 @@
-class StrCallable(object):
+class StrCallable:
     """Wraps around a callable to evaluate it on str and repr."""
     
     def __init__(self, function):

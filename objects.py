@@ -7,7 +7,7 @@ from . import helpers as helpers
 from . import wrappers as wrappers
 
 
-class _ObjectMixin(object):
+class _ObjectMixin:
     def __init__(self, **kwargs):
         for key, val in kwargs.items():
             self[key] = self._wrapper(val)
@@ -52,7 +52,7 @@ class _ObjectMixin(object):
         return input_
 
 
-class _SortedMixin(object):
+class _SortedMixin:
     def __setitem__(self, key, value, *args, **kwargs):
         shifted_keys = []
         shifted_values = []
@@ -110,7 +110,7 @@ class PropObject(Object):
         return wrappers.StrCallable(input_)
 
 
-class WithNothing(object):
+class WithNothing:
     """Does nothing when used in a with statement. Example usage:
 
     >>> with DoesSomething() if condition else WithNothing():
@@ -146,7 +146,7 @@ class qlist(list_tuplable_index):
     """A list which quietly ignores all IndexErrors, and only accepts non-negative indices. Useful to avoid
     having to write lots of try-except code to handle the edges of the list."""
     
-    class Eater(object):
+    class Eater:
         """Used by qlist to quietly ignore anything chaining off of its result."""
         def __getattribute__(self, item):
             return self
