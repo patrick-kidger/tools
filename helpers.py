@@ -4,14 +4,14 @@ import uuid as uuid_
 
 
 def _getattritem(o, name):
-    if ']' == name[-1]:
+    if len(name) > 1 and ']' == name[-1]:
         return o[int(name[:-1])]
     else:
         return getattr(o, name)
 
 
 def _setattritem(o, name, val):
-    if ']' == name[-1]:
+    if len(name) > 1 and ']' == name[-1]:
         o[int(name[:-1])] = val
     else:
         setattr(o, name, val)
@@ -27,7 +27,6 @@ def deep_locate_variable(top_object, variable_name):
     next_variable = top_object
     for next_variable_name in variable_descent[:-1]:
         next_variable = _getattritem(next_variable, next_variable_name)
-
     return next_variable, variable_descent[-1]
 
 

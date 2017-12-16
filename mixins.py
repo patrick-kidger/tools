@@ -138,10 +138,19 @@ class ContainerMetaclass(type):
                 return True
         return False
 
-    def __iter__(cls):
+    def items(cls):
         for key, val in cls.__dict__.items():
             if not helpers.is_magic(key):
                 yield key, val
+
+    def keys(cls):
+        for key in cls.__dict__.keys():
+            if not helpers.is_magic(key):
+                yield key
+
+    def values(cls):
+        for key, val in cls.items():
+            yield val
 
     def __add__(cls, other):
         try:  # Test if 'other' is iterable. (i.e. is a tuple or list)

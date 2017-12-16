@@ -122,94 +122,51 @@ class WithNothing:
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass
 
-    
-class list_tuplable_index(list):
-    """A list which may be indexed by tuple: it will take the first value in the tuple as
-    the index within itself, and then pass the rest of the tuple for indexing within the
-    selected element."""
-    
+
+class nonneg_indexing:
     def __getitem__(self, item):
         try:
-            first_item = item[0]
-            remaining_items = item[1:]
-        except TypeError:
-            # The usual behaviour
-            return super(list_tuplable_index, self).__getitem__(item)
-        else:
-            # Now try indexing by tuple.
-            get_item = super(list_tuplable_index, self).__getitem__(first_item)
-            return_item = get_item[remaining_items] if remaining_items else get_item
-            return return_item
-        
-        
-class qlist(list_tuplable_index):
+            # In case :item: is a slice
+            first_item = item.start
+        except AttributeError:
+            first_item = item
+
+        if first_item < 0:
+            raise IndexError('{} index out of range'.format(self.__class__))
+        return super(nonneg_indexing, self).__getitem__(item)
+
+
+class nonneg_deque(nonneg_indexing, collections.deque):
+    """As collections.deque, but only supports positive indexing."""
+
+
+class nonneg_list(nonneg_indexing, list):
+    """As collections.deque, but only supports positive indexing."""
+
+
+class qlist(nonneg_list):
     """A list which quietly ignores all IndexErrors, and only accepts non-negative indices. Useful to avoid
     having to write lots of try-except code to handle the edges of the list."""
-    
+
     class Eater:
         """Used by qlist to quietly ignore anything chaining off of its result."""
+
         def __getattribute__(self, item):
             return self
-            
+
         def __getitem__(self, item):
             return self
-            
+
         def __call__(self, *args, **kwargs):
             return self
-            
+
     def __init__(self, *args, except_val=Eater(), **kwargs):
         self.except_val = except_val
         super(qlist, self).__init__(*args, **kwargs)
-    
-    def __getitem__(self, item):
-        # So that we can index by tuple
-        try:
-            first_item = item[0]
-        except TypeError:
-            first_item = item
 
+    def __getitem__(self, item):
         try:
-            try:
-                if first_item < 0:
-                    raise IndexError
-            except TypeError:  # If first_item is actually a slice or something
-                pass
             val = super(qlist, self).__getitem__(item)
         except IndexError:
             val = self.except_val
         return val
-
-
-class nonneg_deque(collections.deque):
-    """As collections.deque, but only supports positive indexing."""
-    def __getitem__(self, item):
-        if item < 0:
-            raise IndexError('nonneg_deque index out of range')
-        return super(nonneg_deque, self).__getitem__(item)
-        
-        
-def array(*args, fill_func=lambda pos: 0, list_type=list_tuplable_index, _pos=None):
-    """Creates a list of lists of lists of..., of size as specified by its arguments.
-    
-    By default, the returned array may be indexed by tuple,
-    i.e. myarray[1, 2, 3] == myarray[(1, 2, 3)] == myarray[1][2][3].
-    This may change depending on list_type.
-    
-    e.g. array(2, 3, 4) produces a list of two lists, each comprising of three lists, each comprising of four lists.
-    
-    Also accepts a 'fill_func' argument, which is a function which will be called to populate the elements of the bottom
-    lists. (It's a function because otherwise e.g. fill=Tile() would use the same instance of Tile everywhere.) The function
-    will have its position within the array passed as an argument.
-    
-    Also accepts a 'list_type' argument, which is what every list will be converted to. E.g. to use qlist above.
-    
-    The '_pos' argument is used in internal recursive calls and should not be used."""
-    
-    if _pos is None:
-        _pos = []
-    if len(args):
-        length = args[0]
-        wrapped_array = [array(*args[1:], fill_func=fill_func, list_type=list_type, _pos=_pos + [i]) for i in range(length)]
-        return list_type(wrapped_array)
-    else:
-        return fill_func(tuple(_pos))
