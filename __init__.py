@@ -1,5 +1,6 @@
 from Tools.context import *
 from Tools.decorators import *
+from Tools.geometry import *
 from Tools.helpers import *
 from Tools.iterators import *
 from Tools.metaclasses import *

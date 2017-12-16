@@ -1,6 +1,7 @@
 import copy
 
-from . import helpers as helpers
+import Tools.helpers as helpers
+import Tools.objects as objects
 
 
 class NoneAttributesMixin:
@@ -178,3 +179,58 @@ class ContainsAll:
     """Instances of this class always returns true when testing if something is contained in it."""
     def __contains__(self, item):
         return True
+
+
+class HasXYPositionMixin:
+    """Gives the class a notion of x, y position."""
+    def __init__(self, pos=None):
+        self.pos = objects.Object(x=0, y=0)
+        if pos is not None:
+            self.set_pos(pos)
+        super(HasXYPositionMixin, self).__init__()
+
+    def set_pos(self, pos):
+        """Sets the object's current position"""
+        self.pos.x = pos.x
+        self.pos.y = pos.y
+
+    @property
+    def x(self):
+        """The object's current x position."""
+        return self.pos.x
+
+    @property
+    def y(self):
+        """The object's current y position."""
+        return self.pos.y
+
+    @x.setter
+    def x(self, val):
+        self.pos.x = val
+
+    @y.setter
+    def y(self, val):
+        self.pos.y = val
+
+
+class HasPositionMixin(HasXYPositionMixin):
+    """Gives the class a notion of x, y, z position."""
+    def __init__(self, pos=None):
+        self.pos = objects.Object(x=0, y=0, z=0)
+        if pos is not None:
+            self.set_pos(pos)
+        # Deliberately calling the super of its base class; we're overwriting its __init__ here.
+        super(HasXYPositionMixin, self).__init__()
+
+    def set_pos(self, pos):
+        super(HasPositionMixin, self).set_pos(pos)
+        self.pos.z = pos.z
+
+    @property
+    def z(self):
+        """The object's current z position."""
+        return self.pos.z
+
+    @z.setter
+    def z(self, val):
+        self.pos.z = val
