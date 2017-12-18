@@ -103,7 +103,7 @@ def subclass_tracker(attr_name):
             attr_value = getattr(cls, attr_name, None)
             # We might not set attr_name on some subclasses, perhaps because that subclass is itself an abstract base
             # class for its subclasses; doing so shouldn't overwrite what we already have.
-            if attr_value not in SubclassTrackerMixin._subclass_registry:
+            if attr_value not in SubclassTrackerMixin._subclass_registry and attr_value is not None:
                 # We reference SubclassTrackerMixin explicitly here, rather than using cls, so that a class inheriting
                 # from multiple trackers works.
                 SubclassTrackerMixin._subclass_registry[attr_value] = cls
@@ -112,6 +112,11 @@ def subclass_tracker(attr_name):
         def find_subclass(cls, attr_value):
             """Finds the subclass associated with the specified attribute value."""
             return cls._subclass_registry[attr_value]
+
+        @staticmethod
+        def subclasses():
+            # Returning a shallow copy
+            return {key: val for key, val in SubclassTrackerMixin._subclass_registry.items()}
 
     return SubclassTrackerMixin
 

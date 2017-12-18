@@ -112,7 +112,6 @@ class PropObject(Object):
 
 class WithNothing:
     """Does nothing when used in a with statement. Example usage:
-
     >>> with DoesSomething() if condition else WithNothing():
     ...     some_stuff()
     """
@@ -170,3 +169,12 @@ class qlist(nonneg_list):
         except IndexError:
             val = self.except_val
         return val
+
+
+class deldefaultdict(collections.defaultdict):
+    """A collections.defaultdict that doesn't mind about bad del attempts."""
+    def __delitem__(self, key):
+        try:
+            super(deldefaultdict, self).__delitem__(key)
+        except KeyError:
+            pass

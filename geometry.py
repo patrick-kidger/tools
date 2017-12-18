@@ -19,3 +19,6 @@ class Circle(mixins.HasXYPositionMixin):
         closest_x = helpers.clamp(self.x, min(rect.left, rect.right), max(rect.left, rect.right))
         closest_y = helpers.clamp(self.y, min(rect.top, rect.bottom), max(rect.top, rect.bottom))
         return self.collidepoint(closest_x, closest_y)
+
+    def collidecircle(self, circle):
+        return (self.x - circle.x) ** 2 + (self.y - circle.y) ** 2 < (self.radius + circle.radius) ** 2

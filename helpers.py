@@ -1,4 +1,5 @@
 import itertools
+import math
 import re
 import uuid as uuid_
 
@@ -71,6 +72,11 @@ def extract_keys(dict, keys, no_key_val=__sentinel):
 def clamp(val, min_, max_):
     """Clamps :val: to the range between :min_: and :max_:"""
     return min(max(val, min_), max_)
+
+
+def round_mult(val, multiple, direction='round'):
+    round_func = {'round': round, 'up': math.ceil, 'down': math.floor}
+    return round_func[direction](val / multiple) * multiple
 
 
 def re_sub_recursive(pattern, sub, inputstr):
