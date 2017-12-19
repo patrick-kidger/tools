@@ -20,16 +20,29 @@ class DynamicSubclassingMixin:
     This mixin will only usually actually be necessary when wishing to adjust non-method properties, as methods are
     (usually) actually class-level properties, and thus a simple self.__class__ = Foo statement would then suffice."""
     _instance_properties = dict()
+    _all_instance_properties = dict()
 
     def __init__(self):
-        for attr in self._instance_properties:
-            setattr(self, attr, self._instance_properties[attr])
+        for key, val in self._all_instance_properties.items():
+            setattr(self, key, copy.deepcopy(val))
         super(DynamicSubclassingMixin, self).__init__()
+
+    def __init_subclass__(cls, **kwargs):
+        # We collect all the _instance_properties from both this class and all of its superclasses together in
+        # _all_instance_properties
+        cls._all_instance_properties = dict()
+        for kls in cls.__bases__:
+            if hasattr(kls, '_all_instance_properties'):
+                cls._all_instance_properties.update(kls._all_instance_properties)
+
+        cls._all_instance_properties.update(cls._instance_properties)
+
+        super(DynamicSubclassingMixin, cls).__init_subclass__(**kwargs)
 
     def set_subclass(self, subclass):
         """Sets the class of the instance to the specified subclass."""
-        existing_class_attr_names = set(self._instance_properties.keys())
-        new_instance_properties = subclass._instance_properties
+        existing_class_attr_names = set(self._all_instance_properties.keys())
+        new_instance_properties = subclass._all_instance_properties
         new_subclass_attr_names = set(new_instance_properties.keys())
 
         attrs_to_remove = existing_class_attr_names.difference(new_subclass_attr_names)

@@ -171,10 +171,18 @@ class qlist(nonneg_list):
         return val
 
 
-class deldefaultdict(collections.defaultdict):
-    """A collections.defaultdict that doesn't mind about bad del attempts."""
+class _delmixin:
     def __delitem__(self, key):
         try:
-            super(deldefaultdict, self).__delitem__(key)
+            super(_delmixin, self).__delitem__(key)
         except KeyError:
             pass
+
+
+class deldict(_delmixin, dict):
+    """A dictionary that doesn't mind about bad del attempts."""
+
+
+class deldefaultdict(_delmixin, collections.defaultdict):
+    """A collections.defaultdict that doesn't mind about bad del attempts."""
+
