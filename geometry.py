@@ -2,16 +2,17 @@ import Tools.helpers as helpers
 import Tools.mixins as mixins
 
 
-class Circle(mixins.HasXYPositionMixin):
-    __sentinel = object()
+_sentinel = object()
 
+
+class Circle(mixins.HasXYPositionMixin):
     def __init__(self, radius, center):
         self.radius = radius
         super(Circle, self).__init__(pos=center)
 
-    def collidepoint(self, x, y=__sentinel):
+    def collidepoint(self, x, y=_sentinel):
         # So that we can call it as self.collidepoint((x, y))
-        if y == self.__sentinel:
+        if y == _sentinel:
             x, y = x
         return (x - self.x) ** 2 + (y - self.y) ** 2 < self.radius ** 2
 

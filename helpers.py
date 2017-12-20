@@ -4,6 +4,9 @@ import re
 import uuid as uuid_
 
 
+_sentinel = object()
+
+
 def _getattritem(o, name):
     if len(name) > 1 and ']' == name[-1]:
         return o[int(name[:-1])]
@@ -55,8 +58,7 @@ def is_magic(item):
     return item.startswith('__') and item.startswith('__')
 
 
-__sentinel = object()
-def extract_keys(dict, keys, no_key_val=__sentinel):
+def extract_keys(dict, keys, no_key_val=_sentinel):
     """Removes the specified keys from the given dictionary, and returns a dictionary containing those key:value
     pairs. Default behaviour is to ignore those keys which can't be found in the original dictionary. The optional
     argument :no_key_val: can be set to what value missing keys should take in the returned dictionary."""
@@ -64,7 +66,7 @@ def extract_keys(dict, keys, no_key_val=__sentinel):
     return_dict = {}
     for key in keys:
         val = dict.pop(key, no_key_val)
-        if val is not __sentinel:
+        if val is not _sentinel:
             return_dict[key] = val
     return return_dict
 

@@ -4,6 +4,9 @@ import Tools.helpers as helpers
 import Tools.objects as objects
 
 
+_sentinel = object()
+
+
 class NoneAttributesMixin:
     """Accessing attributes which do not exist will return None instead of raising an AttributeError."""
     def __getattr__(self, item):
@@ -59,7 +62,7 @@ class DynamicSubclassingMixin:
 class FindableSubclassMixin:
     """Allows for locating a subclass based on a particular class variable being set to a particular value. It does a
     full search of the subclass structure each time its methods are called, which is not particular efficient. You may
-    prefer the subclass_tracker function below."""
+    prefer SubclassTrackerMixin below, which caches its results."""
 
     @classmethod
     def all_subclasses(cls):
@@ -80,10 +83,16 @@ class FindableSubclassMixin:
         return cls
 
 
-def subclass_tracker(attr_name):
+class SubclassTrackerMixinBase:
+    pass
+
+
+# This has a function wrapper so that it produces new classes each time it is called; different trackers should not have
+# any connection to each other.
+def SubclassTrackerMixin():
     """Creates a class which will record all of its subclasses (and subsub, etc.) in a dictionary, and provides a
-    function to look them up in this dictionary. The argument :attr_name: is the name of the attribute that its
-    subclasses should specify; the value of this attribute is the key in this dictionary, with its value being the
+    function to look them up in this dictionary. The keyword argument 'tracking_attr' is the name of the attribute that
+    its subclasses should specify; the value of this attribute is the key in this dictionary, with its value being the
     subclass it is associated with.
 
     *** Example usage **
@@ -107,15 +116,27 @@ def subclass_tracker(attr_name):
     registry, and will not be findable through this system.
     """
 
-    class SubclassTrackerMixin:
+    class SubclassTrackerMixin(SubclassTrackerMixinBase):
         _subclass_registry = dict()
 
-        def __init_subclass__(cls, **kwargs):
+        def __init_subclass__(cls, tracking_attr=_sentinel, **kwargs):
             super(SubclassTrackerMixin, cls).__init_subclass__(**kwargs)
 
-            attr_value = getattr(cls, attr_name, None)
-            # We might not set attr_name on some subclasses, perhaps because that subclass is itself an abstract base
-            # class for its subclasses; doing so shouldn't overwrite what we already have.
+            # If we don't pass it as an argument then we are either creating a subclass of SubclassTrackerMixin before
+            # we get to the inheritance tree we are looking to track, in which case we return, or we are after, and want
+            # to use the value we passed to its parent class.
+            if tracking_attr is _sentinel:
+                if hasattr(cls, '_tracking_attr'):
+                    tracking_attr = cls._tracking_attr
+                else:
+                    return
+            else:
+                # Store so that cls's subclasses can access it via the logic above.
+                cls._tracking_attr = tracking_attr
+
+            attr_value = getattr(cls, tracking_attr, None)
+            # We might not set tracking_attr on some subclasses, perhaps because that subclass is itself an abstract
+            # base class for its subclasses; doing so shouldn't overwrite what we already have.
             if attr_value not in SubclassTrackerMixin._subclass_registry and attr_value is not None:
                 # We reference SubclassTrackerMixin explicitly here, rather than using cls, so that a class inheriting
                 # from multiple trackers works.
@@ -130,20 +151,16 @@ def subclass_tracker(attr_name):
         def subclasses():
             # Returning a shallow copy
             return {key: val for key, val in SubclassTrackerMixin._subclass_registry.items()}
-
     return SubclassTrackerMixin
 
 
-def dynamic_subclassing_by_attr(attr_name):
+class DynamicSubclassingByAttrMixin(DynamicSubclassingMixin, SubclassTrackerMixin()):
     """Combines dynamic subclassing with locating subclasses by attribute name."""
 
-    class DynamicSubclassingByAttrMixin(DynamicSubclassingMixin, subclass_tracker(attr_name)):
-        def pick_subclass(self, field_value):
-            """Sets the class of the instance to the class associated with the inputted value."""
-            cls = self.find_subclass(field_value)
-            self.set_subclass(cls)
-
-    return DynamicSubclassingByAttrMixin
+    def pick_subclass(self, field_value):
+        """Sets the class of the instance to the class associated with the inputted value."""
+        cls = self.find_subclass(field_value)
+        self.set_subclass(cls)
 
 
 class ContainerMetaclass(type):
@@ -204,13 +221,13 @@ class HasXYPositionMixin:
     def __init__(self, pos=None):
         self.pos = objects.Object(x=0, y=0)
         if pos is not None:
-            self.set_pos(pos)
+            self.set_pos(x=pos.x, y=pos.y)
         super(HasXYPositionMixin, self).__init__()
 
-    def set_pos(self, pos):
+    def set_pos(self, x, y):
         """Sets the object's current position"""
-        self.pos.x = pos.x
-        self.pos.y = pos.y
+        self.x = x
+        self.y = y
 
     @property
     def x(self):
@@ -236,13 +253,13 @@ class HasPositionMixin(HasXYPositionMixin):
     def __init__(self, pos=None):
         self.pos = objects.Object(x=0, y=0, z=0)
         if pos is not None:
-            self.set_pos(pos)
+            self.set_pos(pos.x, pos.y, pos.z)
         # Deliberately calling the super of its base class; we're overwriting its __init__ here.
         super(HasXYPositionMixin, self).__init__()
 
-    def set_pos(self, pos):
-        super(HasPositionMixin, self).set_pos(pos)
-        self.pos.z = pos.z
+    def set_pos(self, x, y, z=0):
+        super(HasPositionMixin, self).set_pos(x, y)
+        self.z = z
 
     @property
     def z(self):
