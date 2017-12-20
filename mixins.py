@@ -1,10 +1,8 @@
 import copy
+import itertools
 
 import Tools.helpers as helpers
 import Tools.objects as objects
-
-
-_sentinel = object()
 
 
 class NoneAttributesMixin:
@@ -89,7 +87,7 @@ class SubclassTrackerMixinBase:
 
 # This has a function wrapper so that it produces new classes each time it is called; different trackers should not have
 # any connection to each other.
-def SubclassTrackerMixin():
+def SubclassTrackerMixin(tracking_attr):
     """Creates a class which will record all of its subclasses (and subsub, etc.) in a dictionary, and provides a
     function to look them up in this dictionary. The keyword argument 'tracking_attr' is the name of the attribute that
     its subclasses should specify; the value of this attribute is the key in this dictionary, with its value being the
@@ -119,20 +117,8 @@ def SubclassTrackerMixin():
     class SubclassTrackerMixin(SubclassTrackerMixinBase):
         _subclass_registry = dict()
 
-        def __init_subclass__(cls, tracking_attr=_sentinel, **kwargs):
+        def __init_subclass__(cls, **kwargs):
             super(SubclassTrackerMixin, cls).__init_subclass__(**kwargs)
-
-            # If we don't pass it as an argument then we are either creating a subclass of SubclassTrackerMixin before
-            # we get to the inheritance tree we are looking to track, in which case we return, or we are after, and want
-            # to use the value we passed to its parent class.
-            if tracking_attr is _sentinel:
-                if hasattr(cls, '_tracking_attr'):
-                    tracking_attr = cls._tracking_attr
-                else:
-                    return
-            else:
-                # Store so that cls's subclasses can access it via the logic above.
-                cls._tracking_attr = tracking_attr
 
             attr_value = getattr(cls, tracking_attr, None)
             # We might not set tracking_attr on some subclasses, perhaps because that subclass is itself an abstract
@@ -154,13 +140,14 @@ def SubclassTrackerMixin():
     return SubclassTrackerMixin
 
 
-class DynamicSubclassingByAttrMixin(DynamicSubclassingMixin, SubclassTrackerMixin()):
+def DynamicSubclassingByAttrMixin(tracking_attr):
     """Combines dynamic subclassing with locating subclasses by attribute name."""
 
-    def pick_subclass(self, field_value):
-        """Sets the class of the instance to the class associated with the inputted value."""
-        cls = self.find_subclass(field_value)
-        self.set_subclass(cls)
+    class DynamicSubclassingByAttrMixin(DynamicSubclassingMixin, SubclassTrackerMixin(tracking_attr)):
+        def pick_subclass(self, field_value):
+            """Sets the class of the instance to the class associated with the inputted value."""
+            cls = self.find_subclass(field_value)
+            self.set_subclass(cls)
 
 
 class ContainerMetaclass(type):
@@ -174,15 +161,37 @@ class ContainerMetaclass(type):
                 return True
         return False
 
+    def __len__(self):
+        length = 0
+        for _ in self.items():
+            length += 1
+        return length
+
+    def __getitem__(cls, item):
+        return type(cls).__getattribute__(cls, item)
+
+    def __setitem__(cls, key, value):
+        type(cls).__setattr__(cls, key, value)
+
+    def __delitem__(cls, key):
+        type(cls).__delattr__(cls, key)
+
+    def __iter__(cls):
+        return cls.keys()
+
     def items(cls):
-        for key, val in cls.__dict__.items():
+        def parent_items():
+            for parent in cls.__bases__:
+                if parent is not Container:
+                    for item in parent.items():
+                        yield item
+        for key, val in itertools.chain(cls.__dict__.items(), parent_items()):
             if not helpers.is_magic(key):
                 yield key, val
 
     def keys(cls):
-        for key in cls.__dict__.keys():
-            if not helpers.is_magic(key):
-                yield key
+        for key, val in cls.items():
+            yield key
 
     def values(cls):
         for key, val in cls.items():
@@ -206,8 +215,13 @@ class ContainerMetaclass(type):
 
 class Container(metaclass=ContainerMetaclass):
     """Allows use of the 'in' keyword to test if the specified value is one of the values that one of its class
-    variables is set to. Also allows for use of 'in' to iterate over its elements. Containers can be added together,
-    and can also have tuples and lists added to them."""
+    variables is set to. Also provides keys(), values(), items() methods in a similar fashion to dicts. Containers can
+    be added together, and can also have tuples and lists added to them. Finally they have use __(get|set|del)item__ in
+    place of __(get|set|del)attr__, so they behave a bit like dictionaries. (In some sense a Container is the complement
+    to objects.Object, which is a dictionary that behaves like a class.)
+
+    Note that subclasses of Container should not be subclasses of anything else. (Unless the anything else is itself a
+    subclass of Container; that's fine.)"""
 
 
 class ContainsAll:

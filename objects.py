@@ -8,10 +8,10 @@ import Tools.wrappers as wrappers
 
 
 class _ObjectMixin:
-    def __init__(self, **kwargs):
+    def __init__(self, *args, **kwargs):
         for key, val in kwargs.items():
             self[key] = self._wrapper(val)
-        super(_ObjectMixin, self).__init__()
+        super(_ObjectMixin, self).__init__(*args)
 
     @classmethod
     def from_dict(cls, dict_):
@@ -19,10 +19,13 @@ class _ObjectMixin:
 
     @classmethod
     def from_args(cls, *args, default_value=None):
-        dict_ = {var: default_value for var in args}
-        return cls.from_dict(dict_)
+        self = cls()
+        for arg in args:
+            self[arg] = default_value
+        return self
     
     def __getattr__(self, item):
+        # This check shouldn't actually be necessary, as magic items should be found through __getattribute__ first.
         if helpers.is_magic(item):
             super(_ObjectMixin, self).__getattr__(item)
         else:
