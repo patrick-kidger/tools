@@ -115,3 +115,21 @@ def single_true(iterable):
     """Checks that precisely one element of the iterable is truthy."""
     i = iter(iterable)
     return any(i) and not any(i)
+
+
+def slice_pieces(sliceable, length):
+    """Cuts a sliceable object into pieces of length 'length', and yields them one at a time."""
+    if not sliceable:
+        yield sliceable
+    while sliceable:
+        piece, sliceable = sliceable[:length], sliceable[length:]
+        yield piece
+
+
+def find_nth(haystack, needle, n):
+    """Finds the nth occurrence of a substring 'needle' in a larger string 'haystack'."""
+    start = haystack.find(needle)
+    while start >= 0 and n > 1:
+        start = haystack.find(needle, start + len(needle))
+        n -= 1
+    return start
