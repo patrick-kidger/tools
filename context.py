@@ -34,16 +34,16 @@ class WithAdder:
         return WithCombined()
 
 
-def set_context_variables(owner, variable_names, value=True):
-    """Allows for easily creating objects to be used in 'with' statements, which set a particular variable to a
-    particular value inside the context.
+def set_context_variables(owner, variable_names, value=True, callback=lambda: None):
+    """Allows for easily creating objects to be used in 'with' statements, which set particular variables to particular
+    values inside the context. Can also have an optional callback called on __exit__.
 
     Example usage:
     >>> class MyClass(object):
     ...     def __init__(self):
     ...         self.something = False
     ...     def with_something(self):
-    ...         return set_context_variable(self, ('something',), True)
+    ...         return set_context_variable(self, ('something',))
     ...
     >>> x = MyClass()
     >>> with x.with_something():
@@ -60,5 +60,6 @@ def set_context_variables(owner, variable_names, value=True):
         def __exit__(self, exc_type, exc_val, exc_tb):
             for variable_name in variable_names:
                 helpers.deepsetattr(owner, variable_name, self.old_variable_values[variable_name])
+            callback()
 
     return VariableSetter()
