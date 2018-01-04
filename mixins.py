@@ -233,53 +233,83 @@ class ContainsAll:
 class HasXYPositionMixin:
     """Gives the class a notion of x, y position."""
     def __init__(self, pos=None):
-        self.pos = objects.Object(x=0, y=0)
+        self._pos = objects.Object(x=0, y=0)
         if pos is not None:
-            self.set_pos(x=pos.x, y=pos.y)
+            self.pos = pos
         super(HasXYPositionMixin, self).__init__()
 
-    def set_pos(self, x, y):
+    @property
+    def pos(self):
+        return self._pos
+
+    @pos.setter
+    def pos(self, value):
         """Sets the object's current position"""
-        self.x = x
-        self.y = y
+        self._pos.x = value.x
+        self._pos.y = value.y
 
     @property
     def x(self):
         """The object's current x position."""
-        return self.pos.x
+        return self._pos.x
 
     @property
     def y(self):
         """The object's current y position."""
-        return self.pos.y
+        return self._pos.y
 
     @x.setter
     def x(self, val):
-        self.pos.x = val
+        self._pos.x = val
 
     @y.setter
     def y(self, val):
-        self.pos.y = val
+        self._pos.y = val
 
 
-class HasPositionMixin(HasXYPositionMixin):
+class HasPositionMixin:
     """Gives the class a notion of x, y, z position."""
-    def __init__(self, pos=None):
-        self.pos = objects.Object(x=0, y=0, z=0)
-        if pos is not None:
-            self.set_pos(pos.x, pos.y, pos.z)
-        # Deliberately calling the super of its base class; we're overwriting its __init__ here.
-        super(HasXYPositionMixin, self).__init__()
 
-    def set_pos(self, x, y, z=0):
-        super(HasPositionMixin, self).set_pos(x, y)
-        self.z = z
+    def __init__(self, pos=None):
+        self._pos = objects.Object(x=0, y=0, z=0)
+        if pos is not None:
+            self.pos = pos
+        super(HasPositionMixin, self).__init__()
+
+    @property
+    def pos(self):
+        return self._pos
+
+    @pos.setter
+    def pos(self, value):
+        """Sets the object's current position"""
+        self._pos.x = value.x
+        self._pos.y = value.y
+        self._pos.z = value.z
+
+    @property
+    def x(self):
+        """The object's current x position."""
+        return self._pos.x
+
+    @property
+    def y(self):
+        """The object's current y position."""
+        return self._pos.y
+
+    @x.setter
+    def x(self, val):
+        self._pos.x = val
+
+    @y.setter
+    def y(self, val):
+        self._pos.y = val
 
     @property
     def z(self):
         """The object's current z position."""
-        return self.pos.z
+        return self._pos.z
 
     @z.setter
     def z(self, val):
-        self.pos.z = val
+        self._pos.z = val
