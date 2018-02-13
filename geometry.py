@@ -113,9 +113,9 @@ class Arc(_CircleMixin, mixins.HasXYPositionMixin):
         super(Arc, self).__init__(pos=center, **kwargs)
 
     @classmethod
-    def from_circle(cls, circle, start_theta, end_theta):
-        """Constructs the arc as being part of the perimeter of the given circle."""
-        return cls(circle.radius, circle.pos, start_theta, end_theta)
+    def from_disc(cls, disc, start_theta, end_theta):
+        """Constructs the arc as being part of the boundary of the given disc."""
+        return cls(disc.radius, disc.pos, start_theta, end_theta)
 
     def contains(self, angle):
         """Whether or not the angle, in radians, lies within the angle of the arc."""
