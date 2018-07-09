@@ -1,5 +1,6 @@
 import itertools
 import math
+import random
 import re
 import uuid as uuid_
 
@@ -133,3 +134,14 @@ def find_nth(haystack, needle, n):
         start = haystack.find(needle, start + len(needle))
         n -= 1
     return start
+
+    
+def random_function(*args):
+    """Picks one of its arguments uniformly at random, calls it, and returns the result.
+    
+    Example usage:
+    >>> random_function(lambda: numpy.uniform(-2, -1), lambda: numpy.uniform(1, 2))
+    """
+    
+    choice = random.randint(0, len(args) - 1)
+    return args[choice]()
