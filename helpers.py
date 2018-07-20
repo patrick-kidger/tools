@@ -83,6 +83,13 @@ def extract_keys(dict, keys, no_key_val=_sentinel):
         if val is not _sentinel:
             return_dict[key] = val
     return return_dict
+    
+
+def update_without_overwrite(dict1, dict2):
+    """As dict.update, except that existing keys in :dict1: are not overwritten with matching keys in :dict2:."""
+    for k, v in dict2.items():
+        if k not in dict1:
+            dict1[k] = v
 
 
 def clamp(val, min_, max_):
@@ -91,6 +98,7 @@ def clamp(val, min_, max_):
 
 
 def round_mult(val, multiple, direction='round'):
+    """Rounds :val: to the nearest :multiple:. The argument :direction: should be either 'round', 'up', or 'down'."""
     round_func = {'round': round, 'up': math.ceil, 'down': math.floor}
     return round_func[direction](val / multiple) * multiple
 
