@@ -163,3 +163,18 @@ def split(delimiters, string, maxsplit=0):
     """
     regexPattern = '|'.join(map(re.escape, delimiters))
     return re.split(regexPattern, string, maxsplit)
+
+    
+def num_digits(n):
+    """Returns the number of digits in an integer :n:.
+    
+    Source:
+    https://stackoverflow.com/a/2189827
+    """
+    
+    if n > 0:
+        return int(math.log10(n)) + 1
+    elif n == 0:
+        return 1
+    else:
+        return int(math.log10(-n)) + 2
