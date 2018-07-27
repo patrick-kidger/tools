@@ -153,3 +153,13 @@ def random_function(*args):
     
     choice = random.randint(0, len(args) - 1)
     return args[choice]()
+
+    
+def split(delimiters, string, maxsplit=0):
+    """Splits a :string: on multiple :delimiters:.
+    
+    Source:
+    https://stackoverflow.com/a/13184791
+    """
+    regexPattern = '|'.join(map(re.escape, delimiters))
+    return re.split(regexPattern, string, maxsplit)
