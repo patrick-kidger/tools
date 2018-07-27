@@ -189,3 +189,14 @@ class deldict(_delmixin, dict):
 class deldefaultdict(_delmixin, collections.defaultdict):
     """A collections.defaultdict that doesn't mind about bad del attempts."""
 
+
+class AddBase:
+    """Always returns the other object when added to. Example usage:
+    
+    >>> returnval = Tools.AddBase()
+    >>> for thing in things:
+    ...     returnval += a_function(thing)
+    """
+    
+    def __add__(self, other):
+        return other
