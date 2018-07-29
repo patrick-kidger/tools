@@ -3,8 +3,8 @@
 import itertools
 import collections
 
-import Tools.helpers as helpers
-import Tools.wrappers as wrappers
+import tools.helpers as helpers
+import tools.wrappers as wrappers
 
 
 class _ObjectMixin:

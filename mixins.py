@@ -1,8 +1,8 @@
 import copy
 import itertools
 
-import Tools.helpers as helpers
-import Tools.objects as objects
+import tools.helpers as helpers
+import tools.objects as objects
 
 
 class NoneAttributesMixin:

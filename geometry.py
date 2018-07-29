@@ -1,8 +1,8 @@
 import math
 
-import Tools.helpers as helpers
-import Tools.mixins as mixins
-import Tools.objects as objects
+import tools.helpers as helpers
+import tools.mixins as mixins
+import tools.objects as objects
 
 
 _sentinel = object()

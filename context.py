@@ -1,5 +1,5 @@
-import Tools.helpers as helpers
-import Tools.mixins as mixins
+import tools.helpers as helpers
+import tools.mixins as mixins
 
 
 class WithAdder:
