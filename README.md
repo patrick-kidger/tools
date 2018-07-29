@@ -8,7 +8,7 @@ Helpful abstract tools (functions, classes, ... ) for coding in Python. Just run
 * `deepgetattr` and `deepsetattr` which allow for getting and setting attributes of (subsubsub-...)subattributes.
 * `classproperty`, which marks a method as being essentially both a classmethod and a property.
 
-Plus a few more esoteric things:
+Plus a few more exotic things:
 * `SubclassTrackerMixin`, which allows for keeping track of and subsequently locating particular subclasses of a given class.
 * `DynamicSubclassingMixin` which allows for dynamically changing the class of an instance on the fly.
 * `WithAdder`, which is a mixin that allows for `+`-ing contexts together.
