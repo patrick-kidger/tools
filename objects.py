@@ -61,7 +61,7 @@ class _SortedMixin:
         shifted_values = []
         items = iter(list(self.items()))
         for key_, value_ in items:
-            if sorted([key, key_]) == [key, key_]:
+            if key < key_:
                 shifted_keys.append(key_)
                 shifted_values.append(value_)
                 break
@@ -83,12 +83,6 @@ class Object(_ObjectMixin, dict):
     The name is a reference to Objects in JavaScript, which behave in this way."""
 
 
-class SortedObject(_SortedMixin, Object):
-    """An Object which keeps all of its attributes sorted. The usual [] notation can still be used as it can for regular
-    Objects, but note that passing non-strings this way will not work in general, as these non-strings cannot be
-    compared to the strings which the attributes are stored with, and thus no notion of sorting would make sense."""
-
-
 class OrderedObject(_ObjectMixin, collections.OrderedDict):
     """An Object which remembers the order its attributes were added in."""
 
@@ -97,6 +91,12 @@ class SortedDict(_SortedMixin, collections.OrderedDict):
     """A dictionary which keeps its key: value pairs sorted by key. Note that this means that all of its keys must be
     comparable to each other; for instance you cannot have both 1 and '1' as keys, as integers and strings are not
     comparable."""
+    
+    
+class SortedObject(_SortedMixin, OrderedObject):
+    """An Object which keeps all of its attributes sorted. The usual [] notation can still be used as it can for regular
+    Objects, but note that passing non-strings this way will not work in general, as these non-strings cannot be
+    compared to the strings which the attributes are stored with, and thus no notion of sorting would make sense."""
 
 
 class PropObject(Object):
