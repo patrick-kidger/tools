@@ -5,9 +5,6 @@ from . import num
 from . import objects
 
 
-_sentinel = object()
-
-
 class HasXYPositionMixin:
     """Gives the class a notion of x, y position."""
     def __init__(self, pos=None):
@@ -148,9 +145,9 @@ class Disc(_CircleMixin, HasXYPositionMixin):
         self.radius = radius
         super(Disc, self).__init__(pos=center, **kwargs)
 
-    def collidepoint(self, x, y=_sentinel):
+    def collidepoint(self, x, y=None):
         """Determines collisions with a point."""
-        if y == _sentinel:
+        if y is None:
             x, y = x.x, x.y
         return (x - self.x) ** 2 + (y - self.y) ** 2 < self.radius ** 2
 

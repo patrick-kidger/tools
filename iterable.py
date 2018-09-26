@@ -2,14 +2,11 @@ import itertools
 import math
 
 
-_sentinel = object()
-
-
-def rangeinf(start, stop=_sentinel, step=1):
+def rangeinf(start, stop=None, step=1):
     """Acts as range, however passing stop=math.inf or np.inf will have it go forever."""
     # Allows us to pass just one argument and has it act as 'stop', with 'start' set to zero. This is the same
     # behaviour as the usual range function
-    if stop == _sentinel:
+    if stop is None:
         stop = start
         start = 0
     if stop == math.inf:  # Also True for numpy.inf
