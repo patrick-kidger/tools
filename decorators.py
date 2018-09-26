@@ -1,11 +1,15 @@
 import functools
 
 
-def register(name_str, registration_dict):
+def register(registration_dict, name_str=None):
     """A decorator which registers the decorated object in the specified dictionary."""
 
     def wrapper(input_val):
-        registration_dict[name_str] = input_val
+        if name_str is None:
+            name_str_ = input_val.__name__
+        else:
+            name_str_ = name_str
+        registration_dict[name_str_] = input_val
         return input_val
     return wrapper
 

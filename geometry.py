@@ -1,15 +1,101 @@
 import math
 
-import tools.helpers as helpers
-import tools.mixins as mixins
-import tools.objects as objects
+from . import iterable
+from . import num
+from . import objects
 
 
 _sentinel = object()
 
 
+class HasXYPositionMixin:
+    """Gives the class a notion of x, y position."""
+    def __init__(self, pos=None):
+        self._pos = objects.Object(x=0, y=0)
+        if pos is not None:
+            self.pos = pos
+        super(HasXYPositionMixin, self).__init__()
+
+    @property
+    def pos(self):
+        return self._pos
+
+    @pos.setter
+    def pos(self, value):
+        """Sets the object's current position"""
+        self._pos.x = value.x
+        self._pos.y = value.y
+
+    @property
+    def x(self):
+        """The object's current x position."""
+        return self._pos.x
+
+    @property
+    def y(self):
+        """The object's current y position."""
+        return self._pos.y
+
+    @x.setter
+    def x(self, val):
+        self._pos.x = val
+
+    @y.setter
+    def y(self, val):
+        self._pos.y = val
+
+
+class HasPositionMixin:
+    """Gives the class a notion of x, y, z position."""
+
+    def __init__(self, pos=None):
+        self._pos = objects.Object(x=0, y=0, z=0)
+        if pos is not None:
+            self.pos = pos
+        super(HasPositionMixin, self).__init__()
+
+    @property
+    def pos(self):
+        return self._pos
+
+    @pos.setter
+    def pos(self, value):
+        """Sets the object's current position"""
+        self._pos.x = value.x
+        self._pos.y = value.y
+        self._pos.z = value.z
+
+    @property
+    def x(self):
+        """The object's current x position."""
+        return self._pos.x
+
+    @property
+    def y(self):
+        """The object's current y position."""
+        return self._pos.y
+
+    @x.setter
+    def x(self, val):
+        self._pos.x = val
+
+    @y.setter
+    def y(self, val):
+        self._pos.y = val
+
+    @property
+    def z(self):
+        """The object's current z position."""
+        return self._pos.z
+
+    @z.setter
+    def z(self, val):
+        self._pos.z = val
+
+
 class _CircleMixin:
     """Provides helper functions for arcs and discs."""
+
     def within_disc(self, circle):
         """Determines whether this circle is entirely within another circle."""
         dist_sqr = (self.x - circle.x) ** 2 + (self.y - circle.y) ** 2
@@ -57,7 +143,7 @@ class _CircleMixin:
         return p1, p2, None
 
 
-class Disc(_CircleMixin, mixins.HasXYPositionMixin):
+class Disc(_CircleMixin, HasXYPositionMixin):
     def __init__(self, radius, center, **kwargs):
         self.radius = radius
         super(Disc, self).__init__(pos=center, **kwargs)
@@ -70,8 +156,8 @@ class Disc(_CircleMixin, mixins.HasXYPositionMixin):
 
     def colliderect(self, rect):
         """Determines collisions with an axis-aligned rectangle."""
-        closest_x = helpers.clamp(self.x, min(rect.left, rect.right), max(rect.left, rect.right))
-        closest_y = helpers.clamp(self.y, min(rect.top, rect.bottom), max(rect.top, rect.bottom))
+        closest_x = num.clamp(self.x, min(rect.left, rect.right), max(rect.left, rect.right))
+        closest_y = num.clamp(self.y, min(rect.top, rect.bottom), max(rect.top, rect.bottom))
         return self.collidepoint(closest_x, closest_y)
 
     def collide_disc(self, circle):
@@ -104,7 +190,7 @@ class Disc(_CircleMixin, mixins.HasXYPositionMixin):
         return self.collidepoint(closest_point)
 
 
-class Arc(_CircleMixin, mixins.HasXYPositionMixin):
+class Arc(_CircleMixin, HasXYPositionMixin):
     def __init__(self, radius, center, start_theta, end_theta, degrees=True, **kwargs):
         self.radius = radius
         mult = (math.pi / 180) if degrees else 1
@@ -130,7 +216,7 @@ class Irat:
     """Isosceles Right-Angled Triangle."""
 
     def __init__(self, side_length, pos, upleft=False, upright=False, downleft=False, downright=False, **kwargs):
-        if not helpers.single_true((upleft, upright, downleft, downright)):
+        if not iterable.single_true((upleft, upright, downleft, downright)):
             raise TypeError('Precisely one of keyword arguments "upleft", "upright", "downleft", "downright" must be '
                             'True.')
 
@@ -169,8 +255,8 @@ class Irat:
             closest_y = pos.y
 
         # Then clamp
-        closest_x = helpers.clamp(closest_x, min(self.pos_two.x, self.pos_one.x),
-                                  max(self.pos_two.x, self.pos_one.x))
-        closest_y = helpers.clamp(closest_y, min(self.pos_three.y, self.pos_one.y),
-                                  max(self.pos_three.y, self.pos_one.y))
+        closest_x = num.clamp(closest_x, min(self.pos_two.x, self.pos_one.x),
+                               max(self.pos_two.x, self.pos_one.x))
+        closest_y = num.clamp(closest_y, min(self.pos_three.y, self.pos_one.y),
+                               max(self.pos_three.y, self.pos_one.y))
         return objects.Object(x=closest_x, y=closest_y)

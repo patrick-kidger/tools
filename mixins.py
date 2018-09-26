@@ -1,8 +1,8 @@
 import copy
 import itertools
 
-import tools.helpers as helpers
-import tools.objects as objects
+from . import misc
+from . import strings
 
 
 class NoneAttributesMixin:
@@ -81,13 +81,14 @@ class FindableSubclassMixin:
         return cls
 
 
+# Provided for isinstance checks of the result of subclass_tracker
 class SubclassTrackerMixinBase:
     pass
 
 
 # This has a function wrapper so that it produces new classes each time it is called; different trackers should not have
 # any connection to each other.
-def SubclassTrackerMixin(tracking_attr):
+def subclass_tracker(tracking_attr):
     """Creates a class which will record all of its subclasses (and subsub, etc.) in a dictionary, and provides a
     function to look them up in this dictionary. The keyword argument 'tracking_attr' is the name of the attribute that
     its subclasses should specify; the value of this attribute is the key in this dictionary, with its value being the
@@ -140,14 +141,23 @@ def SubclassTrackerMixin(tracking_attr):
     return SubclassTrackerMixin
 
 
-def DynamicSubclassingByAttrMixin(tracking_attr):
+# Provided for isinstance checks of the result of dynamic_subclassing_by_attr
+class DynamicSubclassingByAttrBase:
+    pass
+
+
+def dynamic_subclassing_by_attr(tracking_attr):
     """Combines dynamic subclassing with locating subclasses by attribute name."""
 
-    class DynamicSubclassingByAttrMixin(DynamicSubclassingMixin, SubclassTrackerMixin(tracking_attr)):
+    class DynamicSubclassingByAttrMixin(DynamicSubclassingByAttrBase,
+                                        DynamicSubclassingMixin,
+                                        subclass_tracker(tracking_attr)):
         def pick_subclass(self, field_value):
             """Sets the class of the instance to the class associated with the inputted value."""
             cls = self.find_subclass(field_value)
             self.set_subclass(cls)
+
+    return DynamicSubclassingByAttrMixin
 
 
 class ContainerMetaclass(type):
@@ -177,7 +187,7 @@ class ContainerMetaclass(type):
         type(cls).__delattr__(cls, key)
 
     def __iter__(cls):
-        return cls.keys()
+        return cls.values()
 
     def items(cls):
         def parent_items():
@@ -186,7 +196,7 @@ class ContainerMetaclass(type):
                     for item in parent.items():
                         yield item
         for key, val in itertools.chain(cls.__dict__.items(), parent_items()):
-            if not helpers.is_magic(key):
+            if not strings.is_magic(key):
                 yield key, val
 
     def keys(cls):
@@ -198,19 +208,24 @@ class ContainerMetaclass(type):
             yield val
 
     def __add__(cls, other):
-        try:  # Test if 'other' is iterable. (i.e. is a tuple or list)
-            iter(other)
-        except TypeError:  # Assume other is a Container
+        if isinstance(other, ContainerMetaclass):
             other_class = other
         else:  # Convert 'other' into a class we can inherit from
             class other_class(Container):
                 pass
             for item in other:
-                setattr(other_class, helpers.uuid(), item)
+                setattr(other_class, misc.uuid(), item)
 
         class ContainerCombined(cls, other_class):
             pass
         return ContainerCombined
+
+    def __repr__(cls):
+        arg_strs = []
+        for key, val in cls.items():
+            arg_strs.append(f'{key}={val}')
+        kwargs = ', '.join(arg_strs)
+        return f'{cls.__name__}({kwargs})'
 
 
 class Container(metaclass=ContainerMetaclass):
@@ -220,96 +235,9 @@ class Container(metaclass=ContainerMetaclass):
     place of __(get|set|del)attr__, so they behave a bit like dictionaries. (In some sense a Container is the complement
     to objects.Object, which is a dictionary that behaves like a class.)
 
+    Emphasis is placed on the fact that 'in' tests if the specified value is a _value_, not a key. (Unlike
+    dictionaries.)
+
     Note that subclasses of Container should not be subclasses of anything else. (Unless the anything else is itself a
-    subclass of Container; that's fine.)"""
-
-
-class ContainsAll:
-    """Instances of this class always returns true when testing if something is contained in it."""
-    def __contains__(self, item):
-        return True
-
-
-class HasXYPositionMixin:
-    """Gives the class a notion of x, y position."""
-    def __init__(self, pos=None):
-        self._pos = objects.Object(x=0, y=0)
-        if pos is not None:
-            self.pos = pos
-        super(HasXYPositionMixin, self).__init__()
-
-    @property
-    def pos(self):
-        return self._pos
-
-    @pos.setter
-    def pos(self, value):
-        """Sets the object's current position"""
-        self._pos.x = value.x
-        self._pos.y = value.y
-
-    @property
-    def x(self):
-        """The object's current x position."""
-        return self._pos.x
-
-    @property
-    def y(self):
-        """The object's current y position."""
-        return self._pos.y
-
-    @x.setter
-    def x(self, val):
-        self._pos.x = val
-
-    @y.setter
-    def y(self, val):
-        self._pos.y = val
-
-
-class HasPositionMixin:
-    """Gives the class a notion of x, y, z position."""
-
-    def __init__(self, pos=None):
-        self._pos = objects.Object(x=0, y=0, z=0)
-        if pos is not None:
-            self.pos = pos
-        super(HasPositionMixin, self).__init__()
-
-    @property
-    def pos(self):
-        return self._pos
-
-    @pos.setter
-    def pos(self, value):
-        """Sets the object's current position"""
-        self._pos.x = value.x
-        self._pos.y = value.y
-        self._pos.z = value.z
-
-    @property
-    def x(self):
-        """The object's current x position."""
-        return self._pos.x
-
-    @property
-    def y(self):
-        """The object's current y position."""
-        return self._pos.y
-
-    @x.setter
-    def x(self, val):
-        self._pos.x = val
-
-    @y.setter
-    def y(self, val):
-        self._pos.y = val
-
-    @property
-    def z(self):
-        """The object's current z position."""
-        return self._pos.z
-
-    @z.setter
-    def z(self, val):
-        self._pos.z = val
+    subclass of Container; that's fine.)
+    """

@@ -12,7 +12,22 @@ def rangeinf(start, stop=_sentinel, step=1):
     if stop == _sentinel:
         stop = start
         start = 0
-    if stop == math.inf:
+    if stop == math.inf:  # Also True for numpy.inf
         return itertools.count(start, step)
     else:
         return range(start, stop, step)
+
+
+def single_true(iterable):
+    """Checks that precisely one element of the iterable is truthy."""
+    i = iter(iterable)
+    return any(i) and not any(i)
+
+
+def slice_pieces(sliceable, length):
+    """Cuts a sliceable object into pieces of length 'length', and yields them one at a time."""
+    if not sliceable:
+        yield sliceable
+    while sliceable:
+        piece, sliceable = sliceable[:length], sliceable[length:]
+        yield piece
