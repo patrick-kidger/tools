@@ -23,6 +23,17 @@ def record(registration_list):
     return wrapper
 
 
+# Unlike functools.wraps, this just takes a name, not an existing function
+def rename(funcname):
+    def _rename(func):
+        if funcname is not None:
+            func.__name__ = funcname
+            loc = func.__qualname__.rsplit('.', 1)[0]
+            func.__qualname__ = f'{loc}.{funcname}'
+        return func
+    return _rename
+
+
 class combomethod:
     """Marks the decorated method as being usable as both an instance method and a class method."""
 
