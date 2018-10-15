@@ -91,10 +91,29 @@ class Record:
     def __repr__(self):
         arg_strs = []
         for key in self.__slots__:
-            val = getattr(self, key)
+            try:
+                val = repr(getattr(self, key))
+            except AttributeError:
+                # In case a value gets del'd
+                val = ''
             arg_strs.append(f'{key}={val}')
         kwargs = ', '.join(arg_strs)
         return f'{self.__class__.__name__}({kwargs})'
+
+    def __getitem__(self, item):
+        try:
+            return self.__getattribute__(item)
+        except AttributeError as e:
+            raise KeyError(e) from e
+
+    def __setitem__(self, key, value):
+        self.__setattr__(key, value)
+
+    def __delitem__(self, key):
+        try:
+            self.__delattr__(key)
+        except AttributeError as e:
+            raise KeyError(e) from e
 
 
 class _ObjectMixin:
@@ -120,11 +139,9 @@ class _ObjectMixin:
             super(_ObjectMixin, self).__getattr__(item)
         else:
             try:
-                returnval = self.__getitem__(item)
+                return self.__getitem__(item)
             except KeyError as e:
                 raise AttributeError(e) from e
-            else:
-                return returnval
         
     def __setattr__(self, item, value):
         if strings.is_magic(item):
