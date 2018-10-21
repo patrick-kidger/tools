@@ -1,20 +1,19 @@
 """Objects for storing data."""
 
 import collections
-import itertools
 import weakref
 
-from . import misc
+from . import dictionaries
 from . import strings
 
 
 class Record:
     """Creates a record datatype, roughly equivalent to a mutable tuple with named entries.
 
-    It differs from colletions.namedtuple in that (a) entries are mutable, and (b) it does not need to be defined
+    It differs from collections.namedtuple in that (a) entries are mutable, and (b) it does not need to be defined
     first; we can simply create it from the get-go. (This is also its main difference over something like the PyRecord
-    project. It can also be thought of as a counterpart to Object, below, except that Object allows for [] notation
-    lookup, and allows for the addition and removal of entries.
+    project. Lastly (c) entries are not accessible via indexing. It can also be thought of as a counterpart to Object,
+    except that Object allows for [] notation lookup, and allows for the addition of other entries.
 
     Extra entries cannot be added after creation.
 
@@ -31,6 +30,8 @@ class Record:
     ... 5
     Notice how creating a position via PyRecord (or collections.namedtuple, etc.) would all involve an extra line to
     define the class of position before we instantiate it.
+
+    If you really want to define it first then see the Record.spec method.
     """
     __slots__ = ()
     _record_subclasses = weakref.WeakValueDictionary()
@@ -40,42 +41,70 @@ class Record:
     # >>> r = Record(x=4, y=5)
     # >>> assert isinstance(r, Record)
     # Also so that subclassing Record is also (reasonably) safe.
-    def __new__(cls, **kwargs):
-        """Should be called with :**kwargs: specifying the names of the entries, and their initial values. e.g.
-        >>> r = Record(x=4, y=5)
+    def __new__(cls, *args, **kwargs):
+        """
+        Used to create and instantiate a class for recording data in slots. See Record.__doc__ for more information.
+
+        Any :*args: should be strings specifying the name of a slot. Any :**kwargs: should have the name of the slot as
+        the name of the keyword argument, and the default value of the slot as its value.
+
+        e.g.
+        >>> r = Record('z', x=4, y=5)
+        Which might represent the (4, 5) coordinate in 2-dimensional space, and allow for setting a z coordinate later,
+        if desired.
+
+        See also the Record.spec method if you don't want to instantiate immediately.
         """
 
         if hasattr(cls, '_skip_record'):
             return super(Record, cls).__new__(cls)
 
-        slots = tuple(kwargs.keys())
+        slots = (*args, *kwargs.keys())
         try:
             # Reuse existing classes with the correct slots if they exist.
             _Record = cls._record_subclasses[slots]
         except KeyError:
-            # Create a class like this so that we don't have to mess around setting __name__ and __qualname__ manually.
-            # Set the __slots__ attribute to do what we want in the first place.
-            # Set the _skip_record attribute so that we can detect that this is a 'fake' subclass that we shouldn't
-            # treat as a genuine subclass of Record.
-            _Record = type(cls.__name__,
-                           (cls,),
-                           {'__slots__': slots,
-                            '_skip_record': None})
-            # Store the class so we can reuse it later
+            _Record = cls.spec(*args, **kwargs)
+            # Store the class so we can reuse it later; no need to create a new subclass for every instance.
+            # The assumption is that if someone is creating a subclass via Record.spec then they can handle such things
+            # themselves, the same way one would with any other class. But when just doing Record(...), they're not
+            # going to - and it's probably better to avoid creating a a lot of classes than it is to worry about them
+            # doing strange things with the shared classes afterwards.
             cls._record_subclasses[slots] = _Record
 
-        # Actually return an instance of this new class which has the correct __slots__ attribute.
-        r = _Record()
-        for key, val in kwargs.items():
-            setattr(r, key, val)
-        return r
+        return super(Record, _Record).__new__(_Record)
 
     def __init_subclass__(cls, **kwargs):
         super(Record, cls).__init_subclass__(**kwargs)
-        # If we're creating a genuine subclass of Record...
+        # If we're creating a subclass of Record in the usual way for classes...
         if not hasattr(cls, '_skip_record'):
             # ...then give it somewhere to store its own 'extra subclasses' that it creates in __new__
             cls._record_subclasses = weakref.WeakValueDictionary()
+
+    def __init__(self, *args, **kwargs):
+        print('hi')
+        dictionaries.update_without_overwrite(kwargs, self._defaults)
+        for key, val in kwargs.items():
+            setattr(self, key, val)
+        super(Record, self).__init__()
+
+    @classmethod
+    def spec(cls, *args, **kwargs):
+        """Used to create, but not instantiate, a class; otherwise see Record.__doc__ and Record.__new__.__doc__ for
+        more information.
+
+        If you want more complicated things in your data containers - validators, default values populated by factory
+        functions, etc, then check out the attrs project, or the dataclass stdlib in Py3.7+.
+        """
+
+        slots = (*args, *kwargs.keys())
+        # Create a class like this so that we don't have to mess around setting __name__ and __qualname__ manually.
+        # Set the __slots__ attribute to do what we want in the first place.
+        # Set the _defaults attribute to store the default parameters for our slots
+        # Set the _skip_record attribute so that we can detect that this isn't an abstract base class inheriting
+        #   from Record, but is in fact one of our own on-the-fly subclasses.
+        dict_ = {'__slots__': slots, '_defaults': kwargs, '_skip_record': None}
+        return type(cls.__name__, (cls,), dict_)
 
     @classmethod
     def from_dict(cls, dict_):
@@ -114,6 +143,26 @@ class Record:
             self.__delattr__(key)
         except AttributeError as e:
             raise KeyError(e) from e
+
+    def update(self, other, ignore_extra=False):
+        """Update this Record with the values from another Record. If :ignore_extra: is True, then any extra attributes
+        in the other Record without a corresponding attribute in this Record will not raise an error.
+        """
+        for key in other.__slots__:
+            try:
+                val = getattr(self, key)
+            except AttributeError:
+                # An attribute may get del'd
+                pass
+            else:
+                if ignore_extra:
+                    try:
+                        setattr(self, key, val)
+                    except AttributeError:
+                        pass
+                else:
+                    setattr(self, key, val)
+
 
 
 class _ObjectMixin:
@@ -273,92 +322,3 @@ class deldict(_delmixin, dict):
 
 class deldefaultdict(_delmixin, collections.defaultdict):
     """A collections.defaultdict that doesn't mind about bad del attempts."""
-
-
-class ContainsAll:
-    """Instances of this class always returns true when testing if something is contained in it."""
-    def __contains__(self, item):
-        return True
-
-
-class ContainerMetaclass(type):
-    def __contains__(cls, item):
-        if cls is Container:
-            return False
-        if item in cls.__dict__.values():
-            return True
-        for parent_class in cls.__bases__:
-            if item in parent_class:
-                return True
-        return False
-
-    def __len__(self):
-        length = 0
-        for _ in self.items():
-            length += 1
-        return length
-
-    def __getitem__(cls, item):
-        return type(cls).__getattribute__(cls, item)
-
-    def __setitem__(cls, key, value):
-        type(cls).__setattr__(cls, key, value)
-
-    def __delitem__(cls, key):
-        type(cls).__delattr__(cls, key)
-
-    def __iter__(cls):
-        return cls.values()
-
-    def items(cls):
-        def parent_items():
-            for parent in cls.__bases__:
-                if parent is not Container:
-                    for item in parent.items():
-                        yield item
-        for key, val in itertools.chain(cls.__dict__.items(), parent_items()):
-            if not strings.is_magic(key):
-                yield key, val
-
-    def keys(cls):
-        for key, val in cls.items():
-            yield key
-
-    def values(cls):
-        for key, val in cls.items():
-            yield val
-
-    def __add__(cls, other):
-        if isinstance(other, ContainerMetaclass):
-            other_class = other
-        else:  # Convert 'other' into a class we can inherit from
-            class other_class(Container):
-                pass
-            for item in other:
-                setattr(other_class, misc.uuid(), item)
-
-        class ContainerCombined(cls, other_class):
-            pass
-        return ContainerCombined
-
-    def __repr__(cls):
-        arg_strs = []
-        for key, val in cls.items():
-            arg_strs.append(f'{key}={val}')
-        kwargs = ', '.join(arg_strs)
-        return f'{cls.__name__}({kwargs})'
-
-
-class Container(metaclass=ContainerMetaclass):
-    """Allows use of the 'in' keyword to test if the specified value is one of the values that one of its class
-    variables is set to. Also provides keys(), values(), items() methods in a similar fashion to dicts. Containers can
-    be added together, and can also have tuples and lists added to them. Finally they have use __(get|set|del)item__ in
-    place of __(get|set|del)attr__, so they behave a bit like dictionaries. (In some sense a Container is the complement
-    to objects.Object, which is a dictionary that behaves like a class.)
-
-    Emphasis is placed on the fact that 'in' tests if the specified value is a _value_, not a key. (Unlike
-    dictionaries.)
-
-    Note that subclasses of Container should not be subclasses of anything else. (Unless the anything else is itself a
-    subclass of Container; that's fine.)
-    """

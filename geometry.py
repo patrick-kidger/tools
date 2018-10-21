@@ -2,13 +2,13 @@ import math
 
 from . import iterable
 from . import num
-from . import objects
+from . import containers
 
 
 class HasXYPositionMixin:
     """Gives the class a notion of x, y position."""
     def __init__(self, pos=None):
-        self._pos = objects.Object(x=0, y=0)
+        self._pos = containers.Object(x=0, y=0)
         if pos is not None:
             self.pos = pos
         super(HasXYPositionMixin, self).__init__()
@@ -46,7 +46,7 @@ class HasPositionMixin:
     """Gives the class a notion of x, y, z position."""
 
     def __init__(self, pos=None):
-        self._pos = objects.Object(x=0, y=0, z=0)
+        self._pos = containers.Object(x=0, y=0, z=0)
         if pos is not None:
             self.pos = pos
         super(HasPositionMixin, self).__init__()
@@ -134,8 +134,8 @@ class _CircleMixin:
         hdx_d = h * dx_d
         hdy_d = h * dy_d
 
-        p1 = objects.Object(x=xm + hdy_d, y=ym - hdx_d)
-        p2 = objects.Object(x=xm - hdy_d, y=ym + hdx_d)
+        p1 = containers.Object(x=xm + hdy_d, y=ym - hdx_d)
+        p2 = containers.Object(x=xm - hdy_d, y=ym + hdx_d)
 
         return p1, p2, None
 
@@ -223,9 +223,9 @@ class Irat:
         pos_two_offset = side_length * right
         pos_three_offset = side_length * up
 
-        self.pos_one = objects.Object(x=pos.x, y=pos.y)
-        self.pos_two = objects.Object(x=pos.x + pos_two_offset, y=pos.y)
-        self.pos_three = objects.Object(x=pos.x, y=pos.y + pos_three_offset)
+        self.pos_one = containers.Object(x=pos.x, y=pos.y)
+        self.pos_two = containers.Object(x=pos.x + pos_two_offset, y=pos.y)
+        self.pos_three = containers.Object(x=pos.x, y=pos.y + pos_three_offset)
         self.upleft = upleft
         self.upright = upright
         self.downleft = downleft
@@ -256,4 +256,4 @@ class Irat:
                                max(self.pos_two.x, self.pos_one.x))
         closest_y = num.clamp(closest_y, min(self.pos_three.y, self.pos_one.y),
                                max(self.pos_three.y, self.pos_one.y))
-        return objects.Object(x=closest_x, y=closest_y)
+        return containers.Object(x=closest_x, y=closest_y)

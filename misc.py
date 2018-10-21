@@ -28,3 +28,9 @@ class AddBase:
 
     def __add__(self, other):
         return other
+
+
+class ContainsAll:
+    """Instances of this class always returns true when testing if something is contained in it."""
+    def __contains__(self, item):
+        return True

@@ -1,3 +1,4 @@
+from .containers import *
 from .context import *
 from .decorators import *
 from .deepattr import *
@@ -8,5 +9,4 @@ from .metaclasses import *
 from .misc import *
 from .mixins import *
 from .num import *
-from .objects import *
 from .strings import *
