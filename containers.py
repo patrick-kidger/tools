@@ -3,7 +3,6 @@
 import collections
 import weakref
 
-from . import dictionaries
 from . import strings
 
 
@@ -62,6 +61,8 @@ class Record:
         slots = (*args, *kwargs.keys())
         try:
             # Reuse existing classes with the correct slots if they exist.
+            # Note that they need not have the correct defaults, but that doesn't matter - the requested values will be
+            # set in __init__ anyway.
             _Record = cls._record_subclasses[slots]
         except KeyError:
             _Record = cls.spec(*args, **kwargs)
@@ -82,8 +83,31 @@ class Record:
             cls._record_subclasses = weakref.WeakValueDictionary()
 
     def __init__(self, *args, **kwargs):
-        print('hi')
-        dictionaries.update_without_overwrite(kwargs, self._defaults)
+        # There's two different ways to end up in __init__ for this class.
+
+        # Firstly, one can instantiate a class the usual way:
+        # >>> myrecord = Record('x', y=4)
+        # In which case the machinery in __new__, above, will dynamically create a subclass of Record and actually use
+        # that. If that is the case, then the same args and kwargs will be passed to both __new__ and __init__.
+        # __new__ may end up creating a new class with _defaults set to kwargs, or it may reuse an existing class with
+        # the correct slots, in which case the _defaults may be wrong - but that won't matter, because the args and
+        # kwargs will be passed through here, and we just set their values to exactly what we want.
+
+        # Secondly, one could first define a class:
+        # >>> record_class = Record.spec('x', y=4)
+        # and then instantiate it:
+        # >>> myrecord = record_class()
+        # perhaps with some args or kwargs:
+        # >>> myrecord = record_class('y', x=2)
+        # In this case, the __new__ machinery is bypassed by setting _skip_record in Record.spec, so the class doesn't
+        # get recorded. So we can now trust that the _defaults really are what we want them to be, and is what should be
+        # used - unless someone explicitly wants an empty field by passing it as an arg when initialising.
+
+        # Either way, this does precisely what we want. (It's true that that's not entirely clear; might come back and
+        # rewrite this at some point for clarity.)
+        for key, val in self._defaults.items():
+            if key not in args and key not in kwargs:
+                kwargs[key] = val
         for key, val in kwargs.items():
             setattr(self, key, val)
         super(Record, self).__init__()
@@ -92,6 +116,18 @@ class Record:
     def spec(cls, *args, **kwargs):
         """Used to create, but not instantiate, a class; otherwise see Record.__doc__ and Record.__new__.__doc__ for
         more information.
+
+        This method basically allows you to create a class with the slots equal to (*args, *kwargs.keys()), and which
+        when instantiated, will have the slots corresponding to the kwargs automatically populated with the values of
+        kwargs.values(). (Although these can be overridden when instantiated, even to not have any value at all, by
+        passing them as an arg when instantiating.)
+
+        Example (note how slots without values are printed):
+        >>> r = Record.spec('r', 'g', b=3, k=2)
+        >>> r()
+        Record(r=, g=, b=3, k=2)
+        >>> r('b', r=2, k=4)
+        Record(r=2, g=, b=, k=4)
 
         If you want more complicated things in your data containers - validators, default values populated by factory
         functions, etc, then check out the attrs project, or the dataclass stdlib in Py3.7+.
