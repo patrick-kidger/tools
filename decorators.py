@@ -50,10 +50,12 @@ def with_defaults(defaults):
     default values. Note that with_defaults modifies the existing function in-place; it does not copy its input before
     modifying and returning it.
 
+    This decorator may seem a tiny bit magic. Use with care.
+
     For example:
     >>> @with_defaults({'a': 4})
     ... def myfunc(a):
-    ...     print(a)
+    ...     return a
     >>> myfunc()
     4
 
@@ -98,12 +100,29 @@ def with_defaults(defaults):
     ...    pass
     ValueError: Attempted to specify default argument 'a' before non-default argument.
 
-    Finally multiple decorators may be applied to the same function, (provided they are done in such an order than at no
-    point is an argument without defaults to the right of an argument with defaults):
+    Multiple decorators may be applied to the same function, (provided they are done in such an order than at no point
+    is an argument without defaults to the right of an argument with defaults, although this restriction may be
+    circumvented by using AliasDefault, as in the examples below):
     >>> @with_defaults({'a': 3})
     ... @with_defaults({'b': 2})
     ... def f(a, b):
     ...     return a, b
+    >>> f()
+    (3, 2)
+
+    An argument may take on the default value assigned to another argument, by using AliasDefault:
+    >>> @with_defaults({'a': 3})
+    ... def f(b=AliasDefault('a')):
+    ...     return b
+    >>> f()
+    3
+
+    If this results in an argument with a default lying to the left of an argument without a default in the original
+    function, then this may be solved by adding fake aliases (although it is probably better to reorder the arguments
+    instead):
+    >>> @with_defaults({'a': 3, 'x': 2})
+    ... def f(b=AliasDefault('a'), 'x'=AliasDefault('x')):
+    ...     return b, x
     >>> f()
     (3, 2)
     """
@@ -111,46 +130,84 @@ def with_defaults(defaults):
     def with_defaults_decorator(func):
         argspec = inspect.getfullargspec(func)
 
-        # First we handle the non-keyword-only arguments. These are the default arguments, from right to left
+        # First we handle the non-keyword-only arguments, from right to left.
+        args = iter(reversed(argspec.args))
         arg_defaults = argspec.defaults
-        arg_defaults = tuple() if arg_defaults is None else arg_defaults
-        # Ignore arguments that already have default values specified
-        # Cannot just use negative indexing here in case len(defaults) == 0
-        args = argspec.args
-        args = argspec.args[:len(args) - len(arg_defaults)]
-        extra_defaults = []
+        arg_defaults = iter(reversed(tuple() if arg_defaults is None else arg_defaults))
+
+        new_defaults = []
         stopped_defaults = False
-        for arg in reversed(args):  # Work backwards through the remaining arguments assigning default values
+
+        # First iterate through everything that already has a default
+        for arg_default, arg in zip(arg_defaults, args):  # Shorter iterator must come first in zip
+            if isinstance(arg_default, AliasDefault):
+                # Use 'renamed' variable
+                try:
+                    new_default = defaults[arg_default.name]
+                except KeyError:
+                    # Keep the AliasDefault
+                    new_default = arg_default
+            else:
+                # Use existing default
+                new_default = arg_default
+
+            new_defaults.append(new_default)
+
+        # Now iterate through everything without a default
+        for arg in args:
             try:
-                arg_default = defaults[arg]
+                new_default = defaults[arg]
             except KeyError:
                 # We've stopped assigning defaults. Trying to assign a default after this is an error, as one cannot
                 # have a default argument specified before a non-default argument.
                 stopped_defaults = True
+                continue
             else:
                 if stopped_defaults:
                     raise ValueError(f"Attempted to specify default argument '{arg}' before non-default argument.")
-                extra_defaults.append(arg_default)
-        func.__defaults__ = (*reversed(extra_defaults), *arg_defaults)
+
+            new_defaults.append(new_default)
+
+        func.__defaults__ = tuple(reversed(new_defaults))
 
         # Now work through the keyword-only arguments
-        kwonlyargs = argspec.kwonlyargs
         kwonlydefaults = argspec.kwonlydefaults
         kwonlydefaults = {} if kwonlydefaults is None else kwonlydefaults
-        for kwarg in kwonlyargs:
+        for kwarg in argspec.kwonlyargs:
             # Ignore arguments that already have default values specified
-            if kwarg not in kwonlydefaults:
+            try:
+                kwargval = kwonlydefaults[kwarg]
+            except KeyError:
+                try_to_get_default = True
+            else:
+                if isinstance(kwargval, AliasDefault):
+                    kwarg = kwargval.name
+                    try_to_get_default = True
+                else:
+                    try_to_get_default = False
+
+            if try_to_get_default:
                 try:
                     new_default = defaults[kwarg]
                 except KeyError:
                     pass
                 else:
+                    # We do this check here, rather than once at the start, so that we don't assign to __kwdefaults__
+                    # if we're not setting any of them. (As it's None by default.)
                     if not func.__kwdefaults__:
                         func.__kwdefaults__ = {}
                     func.__kwdefaults__[kwarg] = new_default
         return func
 
     return with_defaults_decorator
+
+
+class AliasDefault:
+    """Used to 'rename' an argument; see the documentation of with_defaults."""
+    __slots__ = ('name',)
+
+    def __init__(self, name):
+        self.name = name
 
 
 class combomethod:
