@@ -2,9 +2,13 @@ import random
 import uuid as uuid_
 
 
-def uuid():
-    """Returns a unique identifier in hex."""
-    return uuid_.uuid4().hex
+def uuid(trunc=32):
+    """Returns a unique identifier in hex.
+    
+    Can be optionally truncated to a shorter string via the argument :trunc:. Note that
+    truncating a UUID in this way might not be what you want, though.
+    """
+    return uuid_.uuid4().hex[:trunc]
 
     
 def random_function(*args):
