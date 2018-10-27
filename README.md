@@ -11,7 +11,7 @@ Plus a few more exotic things:
 * `subclass_tracker`, which allows for keeping track of and subsequently locating particular subclasses of a given class.
 * `DynamicSubclassingMixin` which allows for dynamically changing the class of an instance on the fly.
 * `WithAdder`, which is a mixin that allows for `+`-ing contexts together.
-* `classproperty`, which marks a method as being essentially both a classmethod and a property.
+* `classproperty`, which marks a method as being both a classmethod and a property. (It's not possible to mix the two usual decorators.)
 * `combomethod`, which marks a method as being both a classmethod and an instance method.
 
 And a few boring-but-useful things:
