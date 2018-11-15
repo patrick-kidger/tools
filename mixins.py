@@ -160,7 +160,7 @@ def dynamic_subclassing_by_attr(tracking_attr):
     return DynamicSubclassingByAttrMixin
 
 
-class ContainerMetaclass(type):
+class _ContainerMetaclass(type):
     def __contains__(cls, item):
         if cls is Container:
             return False
@@ -208,7 +208,7 @@ class ContainerMetaclass(type):
             yield val
 
     def __add__(cls, other):
-        if isinstance(other, ContainerMetaclass):
+        if isinstance(other, _ContainerMetaclass):
             other_class = other
         else:  # Convert 'other' into a class we can inherit from
             class other_class(Container):
@@ -228,7 +228,7 @@ class ContainerMetaclass(type):
         return f'{cls.__name__}({kwargs})'
 
 
-class Container(metaclass=ContainerMetaclass):
+class Container(metaclass=_ContainerMetaclass):
     """Allows use of the 'in' keyword to test if the specified value is one of the values that one of its class
     variables is set to. Also provides keys(), values(), items() methods in a similar fashion to dicts. Containers can
     be added together, and can also have tuples and lists added to them. Finally they have use __(get|set|del)item__ in

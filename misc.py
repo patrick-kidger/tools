@@ -1,4 +1,5 @@
 import random
+import string
 import time
 import uuid as uuid_
 
@@ -6,10 +7,40 @@ import uuid as uuid_
 def uuid(trunc=32):
     """Returns a unique identifier in hex.
     
-    Can be optionally truncated to a shorter string via the argument :trunc:. Note that
-    truncating a UUID in this way might not be what you want, though.
-    """
+    Can be optionally truncated to a shorter string via the argument :trunc:. The result should still be properly
+    random. """  # I think
     return uuid_.uuid4().hex[:trunc]
+
+
+def uuid2(len=8, digits=True, lowercase=True, uppercase=False, hexdigits=False):
+    """Returns a random :len: length string comprising of any combination of :digits:, :lowercase: letters, :uppercase:
+    letters, or :hexdigits:.
+
+    Note that the result need not be cryptographically random.
+    """
+
+    if digits and lowercase and uppercase and hexdigits is False:
+        raise ValueError("At least one of the 'digits', 'lowercase', 'uppercase', 'hexdigits' arguments must be True.")
+    valid_elements = set()
+    if digits:
+        valid_elements.update(string.digits)
+    if lowercase:
+        valid_elements.update(string.ascii_lowercase)
+    if uppercase:
+        valid_elements.update(string.ascii_uppercase)
+    if hexdigits:
+        valid_elements.update(string.hexdigits)
+    valid_elements = list(valid_elements)
+
+    return ''.join(random.choice(valid_elements) for _ in range(len))
+
+
+def safe_issubclass(cls, classinfo):
+    """As the builtin issubclass, but returns False instead of a TypeError if the first argument is not a class."""
+    try:
+        return issubclass(cls, classinfo)
+    except TypeError:  # cls is not actually a class
+        return False
 
     
 def random_function(*args):

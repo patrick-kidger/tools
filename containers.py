@@ -283,19 +283,19 @@ class OrderedObject(_ObjectMixin, collections.OrderedDict):
     """An Object which remembers the order its attributes were added in."""
 
 
-class SortedDict(_SortedMixin, collections.OrderedDict):
-    """A dictionary which keeps its key: value pairs sorted by key. Note that this means that all of its keys must be
-    comparable to each other; for instance you cannot have both 1 and '1' as keys, as integers and strings are not
-    comparable."""
-    
-    
 class SortedObject(_SortedMixin, OrderedObject):
     """An Object which keeps all of its attributes sorted. The usual [] notation can still be used as it can for regular
     Objects, but note that passing non-strings this way will not work in general, as these non-strings cannot be
     compared to the strings which the attributes are stored with, and thus no notion of sorting would make sense."""
 
 
-class nonneg_indexing:
+class SortedDict(_SortedMixin, collections.OrderedDict):
+    """A dictionary which keeps its key: value pairs sorted by key. Note that this means that all of its keys must be
+    comparable to each other; for instance you cannot have both 1 and '1' as keys, as integers and strings are not
+    comparable."""
+
+
+class _nonneg_indexing:
     def __getitem__(self, item):
         try:
             # In case :item: is a slice
@@ -305,14 +305,14 @@ class nonneg_indexing:
 
         if first_item < 0:
             raise IndexError('{} index out of range'.format(self.__class__))
-        return super(nonneg_indexing, self).__getitem__(item)
+        return super(_nonneg_indexing, self).__getitem__(item)
 
 
-class nonneg_deque(nonneg_indexing, collections.deque):
+class nonneg_deque(_nonneg_indexing, collections.deque):
     """As collections.deque, but only supports positive indexing."""
 
 
-class nonneg_list(nonneg_indexing, list):
+class nonneg_list(_nonneg_indexing, list):
     """As collections.deque, but only supports positive indexing."""
 
 

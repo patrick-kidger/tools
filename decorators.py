@@ -1,6 +1,8 @@
 import functools as ft
 import inspect
 
+from . import misc
+
 
 def register(registration_dict, name_str=None):
     """A decorator which registers the decorated object in the specified dictionary."""
@@ -118,13 +120,20 @@ def with_defaults(defaults):
     3
 
     If this results in an argument with a default lying to the left of an argument without a default in the original
-    function, then this may be solved by adding fake aliases (although it is probably better to reorder the arguments
-    instead):
+    function, then this may be solved by adding fake aliases: ```x=AliasDefault('x')``` or by using HasDefault.
+    (Although it is probably better to reorder the arguments instead):
     >>> @with_defaults({'a': 3, 'x': 2})
-    ... def f(b=AliasDefault('a'), 'x'=AliasDefault('x')):
+    ... def f(b=AliasDefault('a'), 'x'=HasDefault):
     ...     return b, x
     >>> f()
     (3, 2)
+
+    As using with_defaults means that it is not necessarily clear which arguments actually have default values, then
+    arguments which have their default values supplied by a call to with_defaults may be marked as such by giving them
+    the default value of HasDefault. This isn't enforced - with_defaults will leave it as a default value if no default
+    value is supplied, as of course it might be provided by a later call to with_defaults. It is simply a default value
+    that with_defaults is happy to override. It provides a way to mark that an argument is using a default value. (Thus
+    ```x=HasDefault``` functions the same as ```x=AliasDefault('x')```.
     """
 
     def with_defaults_decorator(func):
@@ -147,6 +156,8 @@ def with_defaults(defaults):
                 except KeyError:
                     # Keep the AliasDefault
                     new_default = arg_default
+            elif misc.safe_issubclass(arg_default, HasDefault) or isinstance(arg_default, HasDefault):
+                new_default = defaults[arg]
             else:
                 # Use existing default
                 new_default = arg_default
@@ -183,6 +194,8 @@ def with_defaults(defaults):
                 if isinstance(kwargval, AliasDefault):
                     kwarg = kwargval.name
                     try_to_get_default = True
+                elif issubclass(kwargval, HasDefault) or isinstance(kwargval, HasDefault):
+                    try_to_get_default = True
                 else:
                     try_to_get_default = False
 
@@ -208,6 +221,15 @@ class AliasDefault:
 
     def __init__(self, name):
         self.name = name
+
+
+class HasDefault:
+    """Used to mark an argument as having its default value supplied by a call to with_defaults.
+
+    It acts as a default value that with_defaults is happy to override (normally it will leave existing default values
+    alone.) Thus its purpose is simply for code clarity, to mark that a particular argument does have a default value
+    specified.
+    """
 
 
 class combomethod:
