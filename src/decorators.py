@@ -62,10 +62,15 @@ def with_defaults(defaults):
     4
 
     It is expected to use this to set default values for multiple functions in a DRY manner:
-    >>> defaults = {'a': 4, 'b': 'hello', 'c': 7)
+    >>> defaults = {'a': 4, 'b': 'hello', 'c': 7}
     >>> with_my_defaults = with_defaults(defaults)
     >>> @with_my_defaults
     ... def func1(a, b, c):
+    ...     # do something
+    ...     return a, b, c
+    >>> @with_my_defaults
+    ... def func1_another(a, b, c):
+    ...     # do something else; perhaps call func1 without needing to worry about keeping their default values in sync.
     ...     return a, b, c
     >>> func1()
     (4, 'hello', 7)
@@ -104,7 +109,7 @@ def with_defaults(defaults):
 
     Multiple decorators may be applied to the same function, (provided they are done in such an order than at no point
     is an argument without defaults to the right of an argument with defaults, although this restriction may be
-    circumvented by using AliasDefault, as in the examples below):
+    circumvented by using AliasDefault or HasDefault, as in the examples below):
     >>> @with_defaults({'a': 3})
     ... @with_defaults({'b': 2})
     ... def f(a, b):
@@ -157,7 +162,11 @@ def with_defaults(defaults):
                     # Keep the AliasDefault
                     new_default = arg_default
             elif misc.safe_issubclass(arg_default, HasDefault) or isinstance(arg_default, HasDefault):
-                new_default = defaults[arg]
+                try:
+                    new_default = defaults[arg]
+                except KeyError:
+                    # Keep the HasDefault
+                    new_default = arg_default
             else:
                 # Use existing default
                 new_default = arg_default
@@ -194,7 +203,7 @@ def with_defaults(defaults):
                 if isinstance(kwargval, AliasDefault):
                     kwarg = kwargval.name
                     try_to_get_default = True
-                elif issubclass(kwargval, HasDefault) or isinstance(kwargval, HasDefault):
+                elif misc.safe_issubclass(kwargval, HasDefault) or isinstance(kwargval, HasDefault):
                     try_to_get_default = True
                 else:
                     try_to_get_default = False

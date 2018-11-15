@@ -153,6 +153,23 @@ class Record:
         dict_ = {key: default_value for key in args}
         return cls.from_dict(dict_)
 
+    def __eq__(self, other):
+        if set(type(self).__slots__) == set(type(other).__slots__):
+            no_value = object()  # In case of unfilled slots
+            for slot in type(self).__slots__:
+                try:
+                    self_val = self[slot]
+                except KeyError:
+                    self_val = no_value
+                try:
+                    other_val = other[slot]
+                except KeyError:
+                    other_val = no_value
+                if self_val != other_val:
+                    return False
+            return True
+        return False
+
     def __repr__(self):
         arg_strs = []
         for key in self.__slots__:
