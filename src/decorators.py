@@ -160,7 +160,7 @@ def with_defaults(defaults):
                 except KeyError:
                     # Keep the AliasDefault
                     new_default = arg_default
-            elif isinstance(arg_default, HasDefaultClass):
+            elif isinstance(arg_default, _HasDefaultClass):
                 try:
                     new_default = defaults[arg]
                 except KeyError:
@@ -202,7 +202,7 @@ def with_defaults(defaults):
                 if isinstance(kwargval, AliasDefault):
                     kwarg = kwargval.name
                     try_to_get_default = True
-                elif isinstance(kwargval, HasDefaultClass):
+                elif isinstance(kwargval, _HasDefaultClass):
                     try_to_get_default = True
                 else:
                     try_to_get_default = False
@@ -231,8 +231,7 @@ class AliasDefault:
         self.name = name
 
 
-# Interesting that we need to inherit from both of these for the warnings to go away
-class HasDefaultClass(typing.Any, typing.Iterable):
+class _HasDefaultClass:
     """Used to mark an argument as having its default value supplied by a call to with_defaults.
 
     It acts as a default value that with_defaults is happy to override (normally it will leave existing default values
@@ -241,7 +240,7 @@ class HasDefaultClass(typing.Any, typing.Iterable):
     """
 
 
-HasDefault = HasDefaultClass()
+HasDefault = _HasDefaultClass()
 
 
 class combomethod:

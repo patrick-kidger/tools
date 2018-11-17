@@ -86,3 +86,14 @@ class ContainsAll:
     """Instances of this class always returns true when testing if something is contained in it."""
     def __contains__(self, item):
         return True
+
+
+class DefaultException(Exception):
+    """Exceptions with a default error message."""
+
+    def __init__(self, msg=None):
+        if msg is None:
+            msg = self.default_msg
+        super(DefaultException, self).__init__(msg)
+
+    # Subclasses should provide the default_msg class or instance attribute.

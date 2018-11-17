@@ -40,7 +40,8 @@ from .src.misc import (uuid,
                       random_function,
                       time_func,
                       AddBase,
-                      ContainsAll)
+                      ContainsAll,
+                      DefaultException)
 from .src.mixins import (NoneAttributesMixin,
                         DynamicSubclassingMixin,
                         FindableSubclassMixin,
