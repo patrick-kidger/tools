@@ -17,14 +17,16 @@ from . import modules
 # might be in for an unexpected surprise. In short, our library code shouldn't restrict how they wish to use the module
 # for their own purposes.
 #
-# So we need to avoid importing multiprocessing ourselves unless we really have to! So we provide a __call__ function
-# on the module to allow people to tell it what kind of multiprocessing they're using, so that we can define our objects
-# in the appropriate space.
+# So we need to avoid importing multiprocessing ourselves unless we really have to! So we provide a set_multiprocessing
+# function on the module to allow people to tell it what kind of multiprocessing they're using, so that we can define
+# our objects in the appropriate space.
 
 mp_ = None  # Will later be set to the multiprocessing library
 
 
-def _set_mp(mp=None):
+def set_multiprocessing(mp=None):
+    """Lets tools know that it should use :mp: in place of the multiprocessing library."""
+
     global mp_
     if mp_ is not None:
         raise RuntimeError("Module already has a multiprocessing library; cannot specify it again.")
@@ -39,12 +41,13 @@ def _set_mp(mp=None):
     _module.__class__ = _module_old_class
 
 
+# Just for fun, we make it so that we can __call__ the module to set multiprocessing.
 def __call__(self, mp=None):
     """Call the module to tell it what to use as the multiprocessing library; it will default to importing the normal
     multiprocessing library. This is necessary so that multiprocessing can be replaced with the result of
     multiprocessing.get_context, if necessary.
     """
-    _set_mp(mp)
+    set_multiprocessing(mp)
 
 
 # Just defining a __call__ function isn't enough; this is where we actually make the module callable.
@@ -61,7 +64,7 @@ class RedirectedOutputProcess:
     def __new__(cls, *args, **kwargs):
         if cls._instantiated_class is None:
             if mp_ is None:
-                _set_mp()
+                set_multiprocessing()
             cls._instantiated_class = type(cls.__name__, (cls,  mp_.Process), {})
         # Just substitute cls for its new subclass cls._instantiated_class.
         return super(RedirectedOutputProcess, cls._instantiated_class).__new__(cls._instantiated_class)

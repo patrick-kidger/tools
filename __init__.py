@@ -63,7 +63,8 @@ from .src.mixins import (NoneAttributesMixin,
 from .src.modules import (CallableModuleBase,
                           endow_attrs)
 
-from .src.multiprocess import (RedirectedOutputProcess,
+from .src.multiprocess import (set_multiprocessing,
+                               RedirectedOutputProcess,
                                StreamToLogger,
                                LogOutputProcess,
                                StreamToQueue,
