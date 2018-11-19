@@ -14,18 +14,17 @@ def endow_attrs(name, attrs):
     chains possible.)
 
     Example:
-        >>> def _dir(cls):
-        >>>     def __dir__(self):
-        >>>         return super(cls, self).__dir() + ['some', 'other', 'stuff']
-        >>> make_module_callable(__name__, {'__dir__': _dir})
+        >>> def __call__(self):
+        >>>     return 42
+        >>> endow_attrs(__name__, {'__call__': __call__})
     """
 
-    old_cls = sys.modules[name].__class__
+    module = sys.modules[name]
+    old_cls = module.__class__
 
     class CallableModule(old_cls, CallableModuleBase):
         pass
-
     for key, val in attrs.items():
-        setattr(CallableModule, key, val(CallableModule, old_cls))
-
-    sys.modules[name].__class__ = CallableModule
+        setattr(CallableModule, key, val)
+    module.__class__ = CallableModule
+    return module, old_cls
