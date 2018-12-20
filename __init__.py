@@ -73,9 +73,13 @@ from .src.multiprocess import (set_multiprocessing,
 from .src.num import (clamp,
                      round_mult,
                      num_digits,
-                     math_eval)
+                     math_eval,
+                     truncate)
 
 from .src.strings import (is_magic,
                          split,
                          find_nth,
                          re_sub_recursive)
+
+
+from .src.subprocess import shell

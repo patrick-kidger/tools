@@ -66,3 +66,14 @@ def math_eval(string, subs=None):
         else:
             math_dict['x'] = subs
     return eval(string, {'__builtins__': None}, math_dict)
+
+
+# https://stackoverflow.com/questions/783897/truncating-floats-in-python
+def truncate(f, n):
+    """Truncates/pads a float f to n decimal places without rounding."""
+
+    s = '{}'.format(f)
+    if 'e' in s or 'E' in s:
+        return '{0:.{1}f}'.format(f, n)
+    i, p, d = s.partition('.')
+    return '.'.join([i, (d+'0'*n)[:n]])
