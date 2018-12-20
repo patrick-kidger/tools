@@ -1,22 +1,17 @@
 import logging
 import sys
 
-# START HACKERY #
 
 # The builtin multiprocessing library is a bit weird, in that it offers multiple modes that it can be used in - the
-# correct way to use the library is to import it, and then use it with the correct mode specified, e.g:
+# correct way to use the library is often to import it, and then use it with the correct mode specified, e.g:
 #
 # >>> import multiprocessing as mp
 # >>> mp = mp.get_context('forkserver')
 #
-# In particular, we shouldn't go around just blindly importing and using the multiprocessing library without specifying
-# it like this, as else it will set the default mode globally, and anyone else trying to use the multiprocessing library
-# might be in for an unexpected surprise. In short, our library code shouldn't restrict how they wish to use the module
-# for their own purposes.
-#
-# So we need to avoid importing multiprocessing ourselves unless we really have to! So we provide a set_multiprocessing
-# function on the module to allow people to tell it what kind of multiprocessing they're using, so that we can define
-# our objects in the appropriate space.
+# We want to create our objects from whatever context the library user chooses; thus we need to define our objects
+# independent of that to begin with, and retroactively adjust them after the context has been chosen. So we provide a
+# set_multiprocessing function on the module to allow people to tell it what kind of multiprocessing they're using, so
+#  that we can define our objects in the appropriate space.
 
 mp_ = None  # Will later be set to the multiprocessing library
 
@@ -92,8 +87,6 @@ class ProcessFake:
     def sentinel(self):
         return None
 
-
-# END HACKERY #
 
 class RedirectedOutputProcess(ProcessFake):
     """Redirects the stdout and stderr streams of a Process to the specified :stdout: and :stderr:."""
