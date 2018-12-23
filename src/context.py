@@ -22,15 +22,26 @@ class WithAdder:
     ...     pass
     """
     def __add__(self, other):
-        class WithCombined(WithAdder):
-            def __enter__(self_combined):
-                self.__enter__()
-                other.__enter__()
+        return MultiWith([self, other])
 
-            def __exit__(self_combined, exc_type, exc_val, exc_tb):
-                self.__exit__(exc_type, exc_val, exc_tb)
-                other.__exit__(exc_type, exc_val, exc_tb)
-        return WithCombined()
+    def __radd__(self, other):
+        return MultiWith([other, self])
+
+
+class MultiWith(WithAdder):
+    """Encapsulate multiple contexts to enter and exit them all at once."""
+
+    def __init__(self, contexts, **kwargs):
+        self.contexts = contexts
+        super(MultiWith, self).__init__(**kwargs)
+
+    def __enter__(self):
+        for context in self.contexts:
+            context.__enter__()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        for context in self.contexts[::-1]:
+            context.__exit__(exc_type, exc_val, exc_tb)
 
 
 def set_context_variables(owner, variable_names, value=True, callback=lambda: None):
@@ -42,12 +53,17 @@ def set_context_variables(owner, variable_names, value=True, callback=lambda: No
     ...     def __init__(self):
     ...         self.something = False
     ...     def with_something(self):
-    ...         return set_context_variable(self, ('something',))
+    ...         return set_context_variable(self, ['something'])
     ...
     >>> x = MyClass()
     >>> with x.with_something():
     ...     pass
     """
+
+    # Easy mistake to make
+    assert not isinstance(variable_names, str), "Pass a list of variable names, not a single variable name."
+
+    variable_names = list(variable_names)
 
     class VariableSetter(WithAdder):
         def __enter__(self):
