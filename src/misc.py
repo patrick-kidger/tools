@@ -1,3 +1,5 @@
+import inspect
+import os
 import random
 import string
 import time
@@ -68,6 +70,16 @@ def time_func(func):
         end = time.time()
         return end - start
     return timed
+
+
+# https://stackoverflow.com/questions/37792112/python-file-of-the-caller
+def file_loc():
+    """Returns the directory of whatever file this function is called in.
+
+    Example: calling file_loc() in the file located at /home/example_user/example_file.py will return the string
+    '/home/example_user/example_file.py'
+    """
+    return os.path.dirname(inspect.stack()[1][1])
 
 
 class AddBase:

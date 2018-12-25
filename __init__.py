@@ -48,6 +48,7 @@ from .src.misc import (uuid,
                        safe_issubclass,
                        random_function,
                        time_func,
+                       file_loc,
                        AddBase,
                        ContainsAll,
                        DefaultException)
