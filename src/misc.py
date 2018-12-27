@@ -82,6 +82,15 @@ def file_loc():
     return os.path.dirname(inspect.stack()[1][1])
 
 
+def assert_equal(o1, o2, getter=lambda x: x, error_msg='{o1} and {o2} are not equal'):
+    """Checks that :getter(o1): and :getter(o2): are equal, and raises ValueError(:error_msg:) if they are not."""
+
+    if getter(o1) == getter(o2):
+        return
+    else:
+        raise ValueError(error_msg.format(o1=o1, o2=o2))
+
+
 class AddBase:
     """Always returns the other object when added to. Example usage:
 
@@ -91,6 +100,9 @@ class AddBase:
     """
 
     def __add__(self, other):
+        return other
+
+    def __radd__(self, other):
         return other
 
 

@@ -49,6 +49,7 @@ from .src.misc import (uuid,
                        random_function,
                        time_func,
                        file_loc,
+                       assert_equal,
                        AddBase,
                        ContainsAll,
                        DefaultException)
