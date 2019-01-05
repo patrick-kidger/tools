@@ -1,5 +1,4 @@
 import os
-import time
 import unittest
 
 from src import misc
@@ -34,15 +33,6 @@ class TestRandomFunction(unittest.TestCase):
         for _ in range(10):
             res = misc.random_function(lambda: 1, lambda: 2)
             self.assertIn(res, [1, 2])
-
-
-class TestTimeFunc(unittest.TestCase):
-    def test_basic(self):
-        for i in [0.1, 0.2, 0.3, 0.4]:
-            def test_fun():
-                time.sleep(i)
-            timed_fn = misc.time_func(test_fun)
-            self.assertAlmostEqual(timed_fn(), i, delta=0.005)
 
 
 class TestFileLoc(unittest.TestCase):

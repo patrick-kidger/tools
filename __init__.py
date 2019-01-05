@@ -47,7 +47,6 @@ from .src.misc import (uuid,
                        uuid2,
                        safe_issubclass,
                        random_function,
-                       time_func,
                        file_loc,
                        assert_equal,
                        AddBase,
@@ -85,3 +84,8 @@ from .src.strings import (is_magic,
                           re_sub_recursive)
 
 from .src.subprocess import shell
+
+
+from .src.wrapper import (time_func,
+                          compose,
+                          getitemfn)

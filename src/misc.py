@@ -2,7 +2,6 @@ import inspect
 import os
 import random
 import string
-import time
 import uuid as uuid_
 
 
@@ -55,22 +54,6 @@ def random_function(*args):
     choice = random.randint(0, len(args) - 1)
     return args[choice]()
     
-    
-def time_func(func):
-    """Times how long a function takes to run.
-    
-    It doesn't do anything clever to avoid the various pitfalls of timing a function's runtime.
-    (Interestingly, the timeit module doesn't supply a straightforward interface to run a particular
-    function.)
-    """
-    
-    def timed(*args, **kwargs):
-        start = time.time()
-        func(*args, **kwargs)
-        end = time.time()
-        return end - start
-    return timed
-
 
 # https://stackoverflow.com/questions/37792112/python-file-of-the-caller
 def file_loc():
