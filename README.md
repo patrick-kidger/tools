@@ -1,11 +1,12 @@
 # Tools
 
-Helpful abstract tools (functions, classes, ... ) for coding in Python. Just run `import tools` to get access to them all. Particular highlights:
+Helpful abstract tools (functions, classes, ... ) for coding in Python. All accessible via `import tools; tools.Object()`, for example. Particular highlights:
 
 * `Object` (and its siblings `SortedObject`, `OrderedObject`), which are dictionaries which can behave a bit like classes, by allowing for `.` attribute look up in place of `[]` notation.
 * `Record`, which can be thought of as a `namedtuple` with mutable entries.
 * `deepgetattr` and `deepsetattr` which allow for getting and setting attributes of (subsubsub-...)subattributes.
 * `set_context_variable`, which allows for easily temporarily setting variables to particular values in contexts.
+* `loc_count`, for counting the number of lines of code, comments and whitespace of the files in a directory. *Also comes in a script form: just run `python -m tools.scripts.loc_count` in whatever directory you like!*
 
 Plus a few more exotic things:
 * `subclass_tracker`, which allows for keeping track of and subsequently locating particular subclasses of a given class.
