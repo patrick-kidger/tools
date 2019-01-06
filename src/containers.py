@@ -34,6 +34,7 @@ class Record:
     """
     __slots__ = ()
     _record_subclasses = weakref.WeakValueDictionary()
+    _defaults = {}
 
     # Minor hackery incoming.
     # We do it this way so that the following works as you'd expect:
@@ -217,8 +218,7 @@ class Record:
                     setattr(self, key, val)
 
 
-
-class _ObjectMixin:
+class _ObjectMixin(dict):
     def __init__(self, **kwargs):
         for key, val in kwargs.items():
             self[key] = self._wrapper(val)
@@ -236,35 +236,28 @@ class _ObjectMixin:
         return self
     
     def __getattr__(self, item):
-        # This check shouldn't actually be necessary, as magic items should be found through __getattribute__ first.
-        if strings.is_magic(item):
-            super(_ObjectMixin, self).__getattr__(item)
-        else:
-            try:
-                return self.__getitem__(item)
-            except KeyError as e:
-                raise AttributeError(e) from e
+        try:
+            return self.__getitem__(item)
+        except KeyError as e:
+            raise AttributeError(e) from e
+
+    def __dir__(self):
+        return super(_ObjectMixin, self).__dir__() + [str(k) for k in self.keys()]
         
     def __setattr__(self, item, value):
-        if strings.is_magic(item):
-            super(_ObjectMixin, self).__setattr__(item, value)
-        else:
-            self.__setitem__(item, value)
+        self.__setitem__(item, value)
     
     def __delattr__(self, item):
-        if strings.is_magic(item):
-            super(_ObjectMixin, self).__delattr__(item)
-        else:
-            try:
-                self.__delitem__(item)
-            except KeyError as e:
-                raise AttributeError(e) from e
+        try:
+            self.__delitem__(item)
+        except KeyError as e:
+            raise AttributeError(e) from e
 
     def _wrapper(self, input_):
         return input_
 
 
-class _SortedMixin:
+class _SortedMixin(collections.OrderedDict):
     def __setitem__(self, key, value, *args, **kwargs):
         shifted_keys = []
         shifted_values = []
@@ -285,6 +278,8 @@ class _SortedMixin:
             super(_SortedMixin, self).__setitem__(key_, value_, *args, **kwargs)
 
 
+# Yes yes, technically this is exactly the same as _ObjectMixin because that already specifies that dict comes earlier
+# in its MRO. This is a clearer presentation though.
 class Object(_ObjectMixin, dict):
     """Subclasses dictionary to allow for using . notation to access its stored variables.
 
@@ -306,6 +301,7 @@ class SortedObject(_SortedMixin, OrderedObject):
     compared to the strings which the attributes are stored with, and thus no notion of sorting would make sense."""
 
 
+# And yes, this is technically the same as _SortedMixin, same as Object and _ObjectMixin.
 class SortedDict(_SortedMixin, collections.OrderedDict):
     """A dictionary which keeps its key: value pairs sorted by key. Note that this means that all of its keys must be
     comparable to each other; for instance you cannot have both 1 and '1' as keys, as integers and strings are not

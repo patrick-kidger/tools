@@ -13,6 +13,9 @@ from .src.context import (MultiWith,
                           WithAdder,
                           set_context_variables,
                           WithNothing)
+                          
+from .src.counter import (loc_count,
+                          loc_count_in_file)
 
 from .src.decorators import (register,
                              record,
@@ -85,7 +88,6 @@ from .src.strings import (is_magic,
                           UniqueString)
 
 from .src.subprocess import shell
-
 
 from .src.wrapper import (time_func,
                           compose,
