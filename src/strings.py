@@ -1,3 +1,4 @@
+import collections as co
 import re
 
 
@@ -40,3 +41,30 @@ def re_sub_recursive(pattern, sub, inputstr):
         inputstr = patt.sub(sub, inputstr)
 
     return inputstr
+
+
+class UniqueString:
+    """Used to make strings unique. For every string it is called on, it will keep a record of how many times that
+    string has been supplied to it, and return it with an appropriate disambiguating number attached to it.
+    """
+
+    def __init__(self, format_string='{string}{index}'):
+        """See UniqueString.__doc__.
+
+        Arguments:
+            format_string: Should be a string containing '{string}' and/or '{index}', which will specify the output
+                format of the disambiguated string. Defaults to '{string}{index}'.
+        """
+        self.counter = co.defaultdict(lambda: 0)
+        self.format_string = format_string
+
+    def __call__(self, string):
+        """See UniqueString.__doc__.
+
+        Arguments:
+            string: The string to be disambiguated.
+        """
+        index = self.counter[string]
+        self.counter[string] += 1
+        return self.format_string.format(string=string, index=index)
+

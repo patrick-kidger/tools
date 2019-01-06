@@ -81,7 +81,8 @@ from .src.num import (clamp,
 from .src.strings import (is_magic,
                           split,
                           find_nth,
-                          re_sub_recursive)
+                          re_sub_recursive,
+                          UniqueString)
 
 from .src.subprocess import shell
 
