@@ -43,6 +43,10 @@ def re_sub_recursive(pattern, sub, inputstr):
     return inputstr
 
 
+class String(str):
+    pass
+
+
 class UniqueString:
     """Used to make strings unique. For every string it is called on, it will keep a record of how many times that
     string has been supplied to it, and return it with an appropriate disambiguating number attached to it.
@@ -63,8 +67,14 @@ class UniqueString:
 
         Arguments:
             string: The string to be disambiguated.
+
+        Returns:
+            The disambiguated string. It will have an 'original_string' attribute storing the string before
+            disambiguation.
         """
         index = self.counter[string]
         self.counter[string] += 1
-        return self.format_string.format(string=string, index=index)
-
+        formatted_string = self.format_string.format(string=string, index=index)
+        formatted_string = String(formatted_string)
+        formatted_string.original_string = string
+        return formatted_string
