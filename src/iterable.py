@@ -28,3 +28,22 @@ def slice_pieces(sliceable, length):
     while sliceable:
         piece, sliceable = sliceable[:length], sliceable[length:]
         yield piece
+
+
+class ResetableGenerator:
+    """Takes a function to create a generator, and wraps around it to allow 'resetting' the generator by discarding it
+    and creating a new one.
+    """
+
+    def __init__(self, make_generator):
+        self.make_generator = make_generator
+        self.generator = make_generator()
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return next(self.generator)
+
+    def reset(self):
+        self.generator = self.make_generator()

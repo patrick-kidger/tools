@@ -42,7 +42,8 @@ from .src.geometry import (HasXYPositionMixin,
 
 from .src.iterable import (rangeinf,
                            single_true,
-                           slice_pieces)
+                           slice_pieces,
+                           ResetableGenerator)
 
 from .src.metaclasses import ClassAdder
 
