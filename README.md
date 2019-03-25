@@ -1,6 +1,6 @@
 # Tools
 
-Helpful abstract tools (functions, classes, ... ) for coding in Python. All accessible via `import tools; tools.Object()`, for example. Particular highlights:
+Helpful abstract tools (functions, classes, ... ) for coding in Python. Accessible via, for example, `import tools; tools.Object()`. Particular highlights:
 
 * `Object` (and its siblings `SortedObject`, `OrderedObject`), which are dictionaries which can behave a bit like classes, by allowing for `.` attribute look up in place of `[]` notation.
 * `Record`, which can be thought of as a `namedtuple` with mutable entries.
