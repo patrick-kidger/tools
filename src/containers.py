@@ -252,9 +252,12 @@ class _ObjectMixin(dict):
             self.__delitem__(item)
         except KeyError as e:
             raise AttributeError(e) from e
+            
+    def __setitem__(self, key, value):
+        super(_ObjectMixin, self).__setitem__(key, self._wrapper(value))
 
-    def _wrapper(self, input_):
-        return input_
+    def _wrapper(self, value):
+        return value
 
 
 class _SortedMixin(collections.OrderedDict):

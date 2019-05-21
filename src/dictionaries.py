@@ -19,3 +19,16 @@ def update_without_overwrite(dict1, dict2):
     for k, v in dict2.items():
         if k not in dict1:
             dict1[k] = v
+
+
+def safe_add(dict, key, val):
+    """Adds a key-value pair to a dictionary in a 'safe' manner, in that it will raise a KeyError if the key is already
+    present.
+    """
+
+    try:
+        existing_val = dict[key]
+    except KeyError:
+        dict[key] = val
+    else:
+        raise KeyError(f'Key {key} already present in dictionary {dict} with value {existing_val}')

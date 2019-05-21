@@ -14,6 +14,10 @@ class _File:
         self.comment_lines = lines.comment
         self.whitespace_lines = lines.whitespace
 
+    @property
+    def total_lines(self):
+        return self.code_lines + self.comment_lines + self.whitespace_lines
+
 
 class _Folder:
     def __init__(self, dirpath, files, subfolder_names):
@@ -29,6 +33,10 @@ class _Folder:
             self.code_lines += file.code_lines
             self.comment_lines += file.comment_lines
             self.whitespace_lines += file.whitespace_lines
+
+    @property
+    def total_lines(self):
+        return self.code_lines + self.comment_lines + self.whitespace_lines
 
     def add_lines_from_subfolders(self, all_folders):
         """Goes through all of this folder's immediate subfolders and adds on their current counts for their lines of
@@ -87,36 +95,101 @@ def loc_count_in_file(file_path):
     return line_count
 
 
+def _print_result(print_files, print_folders, folders, print_fn, folder_path, include_zero):
+    if print_files:
+        if print_folders:
+            first_heading_str = "File/Folder location"
+        else:
+            first_heading_str = "File location"
+    else:
+        if print_folders:
+            first_heading_str = "Folder location"
+        else:
+            top = folders[folder_path]
+            print_fn(f'Code: {top.code_lines}')
+            print_fn(f'Comment: {top.comment_lines}')
+            print_fn(f'Whitespace: {top.whitespace_lines}')
+            print_fn(f'Total: {top.total_lines}')
+            return
+    max_folder_loc = len(first_heading_str)
+    max_code = len("Code")
+    max_comment = len("Comment")
+    max_whitespace = len("Whitespace")
+    max_all = len("Total")
+    for folder_loc, folder in folders.items():
+        if include_zero or folder.code_lines != 0:
+            if print_folders:
+                max_folder_loc = max(max_folder_loc, len(folder_loc))
+                max_code = max(max_code, num.num_digits(folder.code_lines))
+                max_comment = max(max_comment, num.num_digits(folder.comment_lines))
+                max_whitespace = max(max_whitespace, num.num_digits(folder.whitespace_lines))
+                max_all = max(max_all, num.num_digits(folder.total_lines))
+            if print_files:
+                for file in folder.files:
+                    if include_zero or file.code_lines != 0:
+                        file_loc = os.path.join(folder_loc, file.name)
+                        max_folder_loc = max(max_folder_loc, len(file_loc))
+                        max_code = max(max_code, num.num_digits(file.code_lines))
+                        max_comment = max(max_comment, num.num_digits(file.comment_lines))
+                        max_whitespace = max(max_whitespace, num.num_digits(file.whitespace_lines))
+                        max_all = max(max_all, num.num_digits(file.total_lines))
+
+    print_str = ("{:<%s} | {:%s} | {:%s} | {:%s} | {:%s}" % (max_folder_loc, max_code, max_comment, max_whitespace,
+                                                             max_all)
+                 ).format(first_heading_str, "Code", "Comment", "Whitespace", "Total")
+    print_fn(print_str)
+    print_fn("-" * (max_folder_loc + 1) + "+" + "-" * (max_code + 2) + "+" + "-" * (max_comment + 2) + "+" +
+             "-" * (max_whitespace + 2) + "+" + "-" * (max_all + 1))
+
+    # Starting to look a bit spaghettified this!
+    for folder_loc, folder in folders.items():
+        if include_zero or folder.code_lines != 0:
+            if print_folders:
+                print_str = ("{:<%s} | {:%s} | {:%s} | {:%s} | {:%s}" % (max_folder_loc, max_code, max_comment,
+                                                                         max_whitespace, max_all)
+                             ).format(folder_loc, folder.code_lines, folder.comment_lines, folder.whitespace_lines,
+                                      folder.code_lines + folder.comment_lines + folder.whitespace_lines)
+                print_fn(print_str)
+            if print_files:
+                for file in folder.files:
+                    if include_zero or file.code_lines != 0:
+                        file_loc = os.path.join(folder_loc, file.name)
+                        print_str = ("{:<%s} | {:%s} | {:%s} | {:%s} | {:%s}" % (max_folder_loc, max_code,
+                                                                                 max_comment, max_whitespace,
+                                                                                 max_all)
+                                     ).format(file_loc, file.code_lines, file.comment_lines, file.whitespace_lines,
+                                              file.code_lines + file.comment_lines + file.whitespace_lines)
+                        print_fn(print_str)
+
+
 def loc_count(folder_path='.', hidden_files=False, hidden_folders=False, print_result=True, include_zero=False,
-              add_subfolders=True, print_files=False, print_folders=True, returnval=True, print_fn=print):
+              add_subfolders=True, print_files=False, print_folders=True, returnval=False, print_fn=print):
     """
     Counts the number of lines of code in a folder.
 
-    :str folder_path: The path to the folder. Defaults to the current folder.
-    :bool hidden_files: Optional, whether to count hidden files. Defaults to False.
-    :bool hidden_folders: Optional, whether to count hidden folders. Defaults to False.
-    :bool print_result: Optional, whether to print out the results in a pretty format at the end. Defaults to True.
-    :bool include_zero: Optional, whether to include files and folders containing zero lines of code. Defaults to False.
-    :bool add_subfolders: Optional, whether to include the amount of code in subfolders when stating the amount of lines
-        of code/comment/whitespace in a folder. Defaults to True.
-    :bool print_files: Optional. Whether or not to print the counts for each file as well as each folder. Defaults to
-        False.
-    :bool print_folders: Optional. Whether or not to print the counts for each folder. Defaults to True.
-    :bool returnval: Optional. Whether or not to return something. Defaults to False.
-    :function print_fn: Optional. The function to call when printing the result, if :print_result: is True. Defaults to
+    Arguments:
+        folder_path: A string specifying the path to the folder to count in. Defaults to the current folder.
+        hidden_files: Boolean, whether to count hidden files. Defaults to False.
+        hidden_folders: Boolean, whether to count hidden folders. Defaults to False.
+        print_result: Boolean, whether to print out the results in a pretty format at the end. Defaults to True.
+        include_zero: Boolean, whether to include files and folders containing zero lines of code. Defaults to False.
+        add_subfolders: Boolean, whether to include the amount of code in subfolders when stating the amount of lines
+            of code/comment/whitespace in a folder. Defaults to True.
+        print_files: Boolean. Whether or not to print the counts for each file. Defaults to False.
+        print_folders: Boolean. Whether or not to print the counts for each folder. Defaults to True.
+        returnval: Boolean. Whether or not to return something. Defaults to False.
+        print_fn: Function. The function to call when printing the result, if :print_result: is True. Defaults to
         the builtin print function.
-    :return: If returnval is truthy, then it is a dictionary, with the keys being the paths to folders, and the values
-        being _Folder objects.
-        
-    Note that the specific combination of :print_result: True, :print_files: False, :print_folders: False will raise a
-    ValueError as that's probably not desired. (Asking to print, and then giving it nothing to print out.)
+    Returns:
+        If returnval is truthy, then it is a dictionary, with the keys being the paths to folders, and the values being
+        _Folder objects.
+
+    If both print_files and print_folders are False whilst print_result is True then a summary of the entire directory
+    will be printed instead.
     """
     
     folder_path = strings.split(['/', '\\'], folder_path)
     folder_path = os.path.join(*folder_path)
-    
-    if print_result is True and print_files is False and print_folders is False:
-        raise ValueError('The argument print_results was True, but print_files and print_folders are both False.')
 
     folders = {}
     for dirpath, subdirnames, filenames in os.walk(folder_path):
@@ -149,66 +222,7 @@ def loc_count(folder_path='.', hidden_files=False, hidden_folders=False, print_r
             folder.add_lines_from_subfolders(folders)
 
     if print_result:
-        if print_files and print_folders:
-            first_heading_str = "File/Folder location"
-        elif print_files and not print_folders:
-            first_heading_str = "File location"
-        elif print_folders and not print_files:
-            first_heading_str = "Folder location"
-        # noinspection PyUnboundLocalVariable
-        max_folder_loc = len(first_heading_str)
-        max_code = len("Code")
-        max_comment = len("Comment")
-        max_whitespace = len("Whitespace")
-        max_all = len("Total")
-        for folder_loc, folder in folders.items():
-            if include_zero or folder.code_lines != 0:
-                if print_folders:
-                    max_folder_loc = max(max_folder_loc, len(folder_loc))
-                    max_code = max(max_code, num.num_digits(folder.code_lines))
-                    max_comment = max(max_comment, num.num_digits(folder.comment_lines))
-                    max_whitespace = max(max_whitespace, num.num_digits(folder.whitespace_lines))
-                    max_all = max(max_all, num.num_digits(folder.code_lines +
-                                                          folder.comment_lines +
-                                                          folder.whitespace_lines))
-                if print_files:
-                    for file in folder.files:
-                        if include_zero or file.code_lines != 0:
-                            file_loc = os.path.join(folder_loc, file.name)
-                            max_folder_loc = max(max_folder_loc, len(file_loc))
-                            max_code = max(max_code, num.num_digits(file.code_lines))
-                            max_comment = max(max_comment, num.num_digits(file.comment_lines))
-                            max_whitespace = max(max_whitespace, num.num_digits(file.whitespace_lines))
-                            max_all = max(max_all, num.num_digits(file.code_lines +
-                                                                  file.comment_lines +
-                                                                  file.whitespace_lines))
-                
-        print_str = ("{:<%s} | {:%s} | {:%s} | {:%s} | {:%s}" % (max_folder_loc, max_code, max_comment, max_whitespace,
-                                                                 max_all)
-                     ).format(first_heading_str, "Code", "Comment", "Whitespace", "Total")
-        print_fn(print_str)
-        print_fn("-" * (max_folder_loc + 1) + "+" + "-" * (max_code + 2) + "+" + "-" * (max_comment + 2) + "+" +
-              "-" * (max_whitespace + 2) + "+" + "-" * (max_all + 1))
-              
-        # Starting to look a bit spaghettified this!
-        for folder_loc, folder in folders.items():
-            if include_zero or folder.code_lines != 0:
-                if print_folders:
-                    print_str = ("{:<%s} | {:%s} | {:%s} | {:%s} | {:%s}" % (max_folder_loc, max_code, max_comment,
-                                                                             max_whitespace, max_all)
-                                 ).format(folder_loc, folder.code_lines, folder.comment_lines, folder.whitespace_lines,
-                                          folder.code_lines + folder.comment_lines + folder.whitespace_lines)
-                    print_fn(print_str)
-                if print_files:
-                    for file in folder.files:
-                        if include_zero or file.code_lines != 0:
-                            file_loc = os.path.join(folder_loc, file.name)
-                            print_str = ("{:<%s} | {:%s} | {:%s} | {:%s} | {:%s}" % (max_folder_loc, max_code,
-                                                                                     max_comment, max_whitespace,
-                                                                                     max_all)
-                                         ).format(file_loc, file.code_lines, file.comment_lines, file.whitespace_lines,
-                                                  file.code_lines + file.comment_lines + file.whitespace_lines)
-                            print_fn(print_str)
+        _print_result(print_files, print_folders, folders, print_fn, folder_path, include_zero)
 
     if returnval:
         return folders

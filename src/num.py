@@ -28,8 +28,11 @@ def num_digits(n):
 
 
 def math_eval(string, subs=None):
-    """Evaluates a given string as a (real) mathematical expression, and returns its result. Is in theory done in a
-    safe manner, allowing untrusted input to be passed as the :string: argument. (But not for the :subs: argument!)
+    """Evaluates a given string as a (real) mathematical expression, and returns its result.
+
+    Is 'mostly safe' to run, in the sense that this uses eval() restricted to run using only certain math functions and
+    without builtins, so you're not going to break anything accidentally by using this. It isn't safe to run on
+    completely untrusted input, though, see: https://nedbatchelder.com/blog/201206/eval_really_is_dangerous.html
 
     Arguments:
     :str string: A string for the expression to be evaluated, which may include math functions. e.g. '4', 'tanh(6)'.

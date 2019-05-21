@@ -32,7 +32,8 @@ from .src.deepattr import (deepgetattr,
                            deepdelattr)
 
 from .src.dictionaries import (extract_keys,
-                               update_without_overwrite)
+                               update_without_overwrite,
+                               safe_add)
 
 from .src.geometry import (HasXYPositionMixin,
                            HasPositionMixin,
@@ -42,7 +43,8 @@ from .src.geometry import (HasXYPositionMixin,
 
 from .src.iterable import (rangeinf,
                            single_true,
-                           slice_pieces)
+                           slice_pieces,
+                           ResetableGenerator)
 
 from .src.metaclasses import ClassAdder
 
