@@ -20,7 +20,7 @@ def uuid2(len=8, digits=True, lowercase=True, uppercase=False, hexdigits=False):
     Note that the result need not be cryptographically random.
     """
 
-    if digits and lowercase and uppercase and hexdigits is False:
+    if not (digits or lowercase or uppercase or hexdigits):
         raise ValueError("At least one of the 'digits', 'lowercase', 'uppercase', 'hexdigits' arguments must be True.")
     valid_elements = set()
     if digits:
